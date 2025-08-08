@@ -27,3 +27,6 @@ class QemuController:
     
     def get_status(self):
         ...
+    
+    def delete(self):
+        ...

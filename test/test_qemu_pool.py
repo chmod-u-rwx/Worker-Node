@@ -1,4 +1,4 @@
-from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError
+from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError, QemuCleaned
 from src.worker_node.config import MAX_MEMORY_ALLOCATED, MAX_CPU_COUNT_ALLOCATED
 
 import pytest
@@ -16,14 +16,15 @@ def test_qemu_acquire_release():
 
     warm_count = len(pool.warm_queue)
     running_count = len(pool.running_queue)
+    assert warm_count > 0
 
     qemu = pool.acquire()
     assert len(pool.warm_queue) == warm_count - 1
     assert len(pool.running_queue) == running_count + 1
 
     pool.release(qemu)
-    assert len(pool.warm_queue) == warm_count + 1
-    assert len(pool.running_queue) == running_count - 1
+    assert len(pool.warm_queue) == warm_count 
+    assert len(pool.running_queue) == running_count 
 
 def test_qemu_pool_cleanup():
     pool = QemuPool()
@@ -31,7 +32,6 @@ def test_qemu_pool_cleanup():
     warm_count = len(pool.warm_queue)
     running_count = len(pool.running_queue)
     assert warm_count > 0
-    assert running_count > 0
     
     pool.cleanup()
 
@@ -40,6 +40,12 @@ def test_qemu_pool_cleanup():
     assert warm_count == 0
     assert running_count == 0
 
+    with pytest.raises(QemuCleaned):
+        pool.acquire()
+    
+    with pytest.raises(QemuCleaned):
+        pool.get_cpu_usage()
+
 def test_qemu_empty_warm_queue():
     pool = QemuPool()
 
@@ -47,11 +53,5 @@ def test_qemu_empty_warm_queue():
         while len(pool.warm_queue) >= 0:
             pool.acquire()
 
-def test_qemu_acquire_after_cleanup():
-    pool = QemuPool()
 
-    pool.cleanup()
-
-    with pytest.raises(QemuPoolEmptyError):
-        pool.acquire()
 
