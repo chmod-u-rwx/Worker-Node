@@ -10,3 +10,6 @@ def test_create_qcow2_img(tmp_path: Path) -> None:
 	QemuController.create_qcow2_img(img_path, 64)
 
 	assert img_path.exists()
+
+
+def
