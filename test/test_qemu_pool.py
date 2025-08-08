@@ -9,7 +9,7 @@ def test_qemu_creating_new_vm_at_startup():
     assert len(pool.warm_queue) == MAX_CPU_COUNT_ALLOCATED, "Qemu pool did not create expected numbers of warm vms"
     expected_memory_allocated = (MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED)
     drift = pool.warm_queue[0].memory_allocated - expected_memory_allocated 
-    assert drift > 100, "Memory allocated was not the expected value"
+    assert drift < 100, "Memory allocated was not the expected value"
 
 def test_qemu_acquire_release():
     pool = QemuPool()
