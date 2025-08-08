@@ -1,6 +1,7 @@
 from pathlib import Path
 import time
 from .qemu_controller import QemuController
+from .cleanup_manager import register_cleanup
 from ..config import MAX_CPU_COUNT_ALLOCATED, MAX_MEMORY_ALLOCATED
 
 class QemuPoolEmptyError(Exception):
@@ -17,6 +18,7 @@ class QemuPool:
         self.is_cleaned = False  
 
         self._warm_vms()
+        register_cleanup(self.cleanup)
    
     def get_memory_usage(self) -> int:
         if self.is_cleaned:
