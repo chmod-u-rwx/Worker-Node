@@ -30,7 +30,6 @@ def test_handle_signal(monkeypatch: pytest.MonkeyPatch) -> None:
 
     register_cleanup(fake_cleanup)
 
-    # Monkeypatch builtins.exit so pytest doesn't terminate early
     def fake_exit(*args: object, **kwargs: object) -> None:
         raise SystemExit(0)
 
