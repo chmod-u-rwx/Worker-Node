@@ -1,8 +1,8 @@
 from pathlib import Path
 from enum import Enum
 import subprocess
-import time
 import shlex
+import time
 
 
 
@@ -17,7 +17,7 @@ class QemuController:
         self.snapshot_name = "kvm-fastboot" #"base"
         self.cpu_count = cpu_count
         self.memory_allocated = memory_allocated
-        self.status = QemuStatus.STARTED
+        self.status = QemuStatus.STOPPED
         self.boot_time = 0
 
     def start(self):
@@ -34,15 +34,22 @@ class QemuController:
             "-enable-kvm"
         ]
 
-        if self.status == QemuStatus.RUNNING:
+        if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
 
         try:
+            start_time = time.perf_counter()
             self.proc = subprocess.Popen(command)
-            self.status = QemuStatus.RUNNING
-            print("VM started successfully.")
 
-            self.boot_time = self.check_ssh_connection()
+            while True:
+                connection = False
+                connection = self.check_ssh_connection()
+                if connection:
+                    break
+            self.boot_time = (time.perf_counter() - start_time)*1000
+            self.status = QemuStatus.STARTED
+
+            print(f"VM booted in {self.boot_time:.2f} ms.")
 
         except FileNotFoundError:
             self.status = QemuStatus.STOPPED
@@ -55,7 +62,7 @@ class QemuController:
             raise RuntimeError(f"An unexpected error occurred: {str(e)}")
     
     def stop(self):
-        if self.status != QemuStatus.RUNNING:
+        if self.status != QemuStatus.STARTED:
             raise RuntimeError("QEMU is not running")
 
         if self.proc:
@@ -80,28 +87,25 @@ class QemuController:
     def get_status(self):
         ...
 
-    def check_ssh_connection(self, port:int=2222, user:str="root", timeout:float=100, step:float=0.05):
+    def check_ssh_connection(self, port:int=2222, user:str="root") -> bool:
         """
         Poll SSH on localhost:port until SSH responds with 'Permission denied',
         indicating the server is up and requesting authentication.
         """
-        start = time.perf_counter()
-        elapsed = 0
+        ssh_cmd = (
+            f"ssh -p {port} -o StrictHostKeyChecking=no "
+            f"-o BatchMode=yes -o ConnectTimeout=1 {user}@localhost true"
+        )
+        result = subprocess.run(
+            shlex.split(ssh_cmd),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if "Permission denied" in result.stderr:
+            return True # if returned SSH can connect
+        
+        if "Connection refused" in result.stderr or "timed out" in result.stderr:
+            return False
 
-        while elapsed < timeout:
-            ssh_cmd = (
-                f"ssh -p {port} -o StrictHostKeyChecking=no "
-                f"-o BatchMode=yes -o ConnectTimeout=1 {user}@localhost true"
-            )
-            result = subprocess.run(
-                shlex.split(ssh_cmd),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if "Permission denied" in result.stderr:
-                return (time.perf_counter() - start) * 1000  # ms
-            time.sleep(step)
-            elapsed = time.perf_counter() - start
-
-        return 0  # Timeout reached, return 0 ms
+        raise TimeoutError(f"SSH connection failed. Last error: {result.stderr.strip()}")
