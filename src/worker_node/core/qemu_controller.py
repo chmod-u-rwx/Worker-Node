@@ -4,8 +4,6 @@ import subprocess
 import shlex
 import time
 
-
-
 class QemuStatus(Enum):
     STARTED = 1
     STOPPED = 2
@@ -21,6 +19,9 @@ class QemuController:
         self.boot_time = 0
 
     def start(self):
+        if self.img_path.exists() == False:
+            raise RuntimeError(f"QEMU img not found at {self.img_path}. Ensure that PATH to img is correct.")
+        
         command = [
             "qemu-system-x86_64",
             "-machine", "accel=kvm:tcg,usb=off",
