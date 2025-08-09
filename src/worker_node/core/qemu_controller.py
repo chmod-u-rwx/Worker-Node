@@ -60,7 +60,7 @@ class QemuController:
     
     def stop(self):
         if self.status != QemuStatus.STARTED:
-            raise RuntimeError("QEMU is not running")
+            raise RuntimeError("QEMU is not STARTED")
 
         if self.proc:
             self.proc.terminate()

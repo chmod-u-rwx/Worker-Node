@@ -2,21 +2,28 @@ from pathlib import Path
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 import subprocess
 
-def test_qemu_controller():
-    image_path = Path("/home/dan/Projects/qemu-node/alpine-stndrd/new-alpine.qcow2")
+image_path = Path("/home/dan/Projects/qemu-node/alpine-stndrd/new-alpine.qcow2")
 
-    assert image_path.exists(), f"VM image not found at {image_path}"
-
+def test_qemu_initialization():
     qemu = QemuController(
         image_path,
         cpu_count=2,
         memory_allocated=512
     )
+    assert qemu.img_path == image_path
+    assert qemu.cpu_count == 2
+    assert qemu.memory_allocated == 512
+    assert qemu.status == QemuStatus.STOPPED
 
+def test_qemu_start():
+    qemu = QemuController(
+        image_path,
+        cpu_count=2,
+        memory_allocated=512
+    )
     try:
         qemu.start()
-        assert qemu.status == QemuStatus.STARTED, "QEMU failed to set status STARTED after start()"
-
+        assert qemu.status == QemuStatus.STARTED
         proc_check = subprocess.run(
             ["pgrep", "-f", "qemu-system-x86_64"],
             stdout=subprocess.PIPE,
@@ -25,31 +32,38 @@ def test_qemu_controller():
         )
         assert proc_check.returncode == 0, "QEMU process did not start at all"
         assert qemu.check_ssh_connection(), "SSH connection failed after starting QEMU"
+    finally:
+        if qemu.status == QemuStatus.STARTED:
+            qemu.stop()
 
-        assert qemu.boot_time is not None, "Boot time not recorded"
-        assert qemu.boot_time < 500, f"QEMU boot time too high: {qemu.boot_time}s"
-
-        # Check if VM is still running before stopping
-        assert subprocess.run(
-            ["pgrep", "-f", "qemu-system-x86_64"],
-            stdout=subprocess.DEVNULL
-        ).returncode == 0, "QEMU process exited unexpectedly before stop()"
-
-    except AssertionError as e:
-        raise AssertionError(f"Test failed: {e}")
-
+def test_qemu_stop():
+    qemu = QemuController(
+        image_path,
+        cpu_count=2,
+        memory_allocated=512
+    )
+    try:
+        qemu.start()
+        assert qemu.status == QemuStatus.STARTED
+        assert qemu.check_ssh_connection(), "SSH connection failed after starting QEMU"
     finally:
         qemu.stop()
-        assert subprocess.run(
+        assert qemu.status == QemuStatus.STOPPED
+        proc_check = subprocess.run(
             ["pgrep", "-f", "qemu-system-x86_64"],
-            stdout=subprocess.DEVNULL
-        ).returncode != 0, "QEMU process is still running after stop()"
-
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        assert proc_check.returncode != 0, "QEMU process did not stop properly"
+        # Double check that stopping again raises an error
         try:
             qemu.stop()
+            assert False, "Expected RuntimeError not raised when stopping already stopped QEMU"
         except RuntimeError as e:
-            assert "No QEMU process to stop" in str(e) or isinstance(e, RuntimeError), "Expected RuntimeError not raised when stopping already stopped QEMU"
+            assert "No QEMU process to stop" in str(e) or isinstance(e, RuntimeError)
 
+def test_qemu_missing_image():
     no_image = QemuController(
         Path("/non/existent/path.qcow2"),
         cpu_count=2,
@@ -57,5 +71,20 @@ def test_qemu_controller():
     )
     try:
         no_image.start()
+        assert False, "Expected RuntimeError not raised for missing image"
     except RuntimeError as e:
-        assert "QEMU img not found" in str(e), "Expected RuntimeError not raised for missing image"
+        assert "QEMU img not found" in str(e)
+
+def test_qemu_boot_time():
+    qemu = QemuController(
+        image_path,
+        cpu_count=2,
+        memory_allocated=512
+    )
+    try:
+        qemu.start()
+        assert qemu.boot_time is not None, "Boot time should be recorded after starting QEMU"
+        assert qemu.boot_time < 500, "QEMU boot time exceeded expected threshold"
+    finally:
+        if qemu.status == QemuStatus.STARTED:
+            qemu.stop()
