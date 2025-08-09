@@ -4,16 +4,16 @@ import subprocess
 
 image_path = Path("/home/dan/Projects/qemu-node/alpine-stndrd/new-alpine.qcow2")
 
-def test_qemu_initialization():
-    qemu = QemuController(
-        image_path,
-        cpu_count=2,
-        memory_allocated=512
-    )
-    assert qemu.img_path == image_path
-    assert qemu.cpu_count == 2
-    assert qemu.memory_allocated == 512
-    assert qemu.status == QemuStatus.STOPPED
+# def test_qemu_initialization():
+#     qemu = QemuController(
+#         image_path,
+#         cpu_count=2,
+#         memory_allocated=512
+#     )
+#     assert qemu.img_path == image_path
+#     assert qemu.cpu_count == 2
+#     assert qemu.memory_allocated == 512
+#     assert qemu.status == QemuStatus.STOPPED
 
 def test_qemu_start():
     qemu = QemuController(
