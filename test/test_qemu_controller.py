@@ -3,23 +3,25 @@ from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 import subprocess
 
 image_path = Path("/home/dan/Projects/qemu-node/alpine-stndrd/new-alpine.qcow2")
+cpu_count = 2
+memory_allocated = 512
 
-# def test_qemu_initialization():
-#     qemu = QemuController(
-#         image_path,
-#         cpu_count=2,
-#         memory_allocated=512
-#     )
-#     assert qemu.img_path == image_path
-#     assert qemu.cpu_count == 2
-#     assert qemu.memory_allocated == 512
-#     assert qemu.status == QemuStatus.STOPPED
+def test_qemu_initialization():
+    qemu = QemuController(
+        image_path,
+        cpu_count,
+        memory_allocated
+    )
+    assert qemu.img_path == image_path
+    assert qemu.cpu_count == cpu_count
+    assert qemu.memory_allocated == memory_allocated
+    assert qemu.status == QemuStatus.STOPPED
 
 def test_qemu_start():
     qemu = QemuController(
         image_path,
-        cpu_count=2,
-        memory_allocated=512
+        cpu_count,
+        memory_allocated
     )
     try:
         qemu.start()
@@ -39,8 +41,8 @@ def test_qemu_start():
 def test_qemu_stop():
     qemu = QemuController(
         image_path,
-        cpu_count=2,
-        memory_allocated=512
+        cpu_count,
+        memory_allocated
     )
     try:
         qemu.start()
@@ -66,8 +68,8 @@ def test_qemu_stop():
 def test_qemu_missing_image():
     no_image = QemuController(
         Path("/non/existent/path.qcow2"),
-        cpu_count=2,
-        memory_allocated=512
+        cpu_count,
+        memory_allocated
     )
     try:
         no_image.start()
@@ -78,8 +80,8 @@ def test_qemu_missing_image():
 def test_qemu_boot_time():
     qemu = QemuController(
         image_path,
-        cpu_count=2,
-        memory_allocated=512
+        cpu_count,
+        memory_allocated
     )
     try:
         qemu.start()
