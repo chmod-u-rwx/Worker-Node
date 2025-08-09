@@ -13,7 +13,7 @@ def test_get_qemu_cmd_no_loadvm(tmp_path: Path):
 	q_cont = QemuController(tmp_path, "macos", 2, 200)
 
 	# For macos
-	cmd = q_cont._get_qemu_cmd() # type: ignore
+	cmd = q_cont._get_qemu_start_cmd() # type: ignore
 	expected = [
 		"qemu-system-x86_64",
 		"-machine", "accel=tcg",
@@ -30,7 +30,7 @@ def test_get_qemu_cmd_no_loadvm(tmp_path: Path):
 
 	# For linux
 	q_cont = QemuController(tmp_path, cpu_count=2, memory_allocated=400, virtualization="linux")
-	cmd = q_cont._get_qemu_cmd() # type: ignore
+	cmd = q_cont._get_qemu_start_cmd() # type: ignore
 	expected = [
 		"qemu-system-x86_64",
 		"-machine", "accel=kvm:tcg,usb=off",
@@ -46,12 +46,11 @@ def test_get_qemu_cmd_no_loadvm(tmp_path: Path):
 	
 	assert cmd == expected
 
-
 def test_get_qemu_cmd_loadvm(tmp_path: Path):
 	q_cont = QemuController(tmp_path, "macos", 4, 400)
 
 	# macos
-	cmd = q_cont._get_qemu_cmd(loadvm=True) #type:ignore
+	cmd = q_cont._get_qemu_start_cmd(loadvm=True) #type:ignore
 
 	expected = [
 		"qemu-system-x86_64",
@@ -90,8 +89,6 @@ def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
 
 	assert "Virtualization must be 'macos' or 'linux' only" in str(err)
 
-
-
 def test_create_snapshot(tmp_path: Path):
 
 	base_img = Path("/Users/luis/netes/x86/alpine-runner.qcow2")
@@ -129,7 +126,7 @@ def test_qemu_binary_not_found(mock_popen: MagicMock, mock_remove: MagicMock, mo
 @patch("os.path.exists")
 @patch("os.remove")
 @patch("subprocess.Popen")
-def test_qemu_monitor_socket_not_ready(mock_popen: MagicMock, mock_remove: MagicMock, mock_exists: MagicMock, test_img: Path):
+def test_create_snapshot_qemu_monitor_socket_not_ready(mock_popen: MagicMock, mock_remove: MagicMock, mock_exists: MagicMock, test_img: Path):
 	mock_exists.return_value = True
 	mock_remove.return_value = None
 	q_cont = QemuController(test_img, "macos", 4, 400)

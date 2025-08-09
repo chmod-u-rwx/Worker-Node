@@ -1,11 +1,9 @@
 import subprocess
-import time
 import os
-import socket
 from pathlib import Path
 from enum import Enum
-from typing import Optional
-
+from ..helpers.process import clean_proccess
+from ..helpers.socket import wait_for_file_socket_availability
 
 class QemuStatus(Enum):
     STARTED = 1
@@ -15,12 +13,13 @@ class QemuStatus(Enum):
 class QemuController:
     def __init__(self, img_path: Path, virtualization: str, cpu_count: int = 1, memory_allocated: int = 0, ) -> None:
 
+        virtualization = virtualization.lower() 
+
         if not img_path.exists():
             raise FileNotFoundError("Base img does not exist")
 
-        virtualization = virtualization.lower() 
-
-        self._validate_virtualization(virtualization)
+        if virtualization not in ["macos", "linux"]:
+            raise ValueError("Virtualization must be 'macos' or 'linux' only") 
 
         self.virtualization = virtualization
         self.img_path = img_path 
@@ -44,7 +43,28 @@ class QemuController:
     def get_status(self):
         ...
 
+    def create_snapshot(self):
+        # using file based socket, to interact with qemu monitor
+        qemu_cmd = self._get_qemu_cmd()
+        qemu_cmd.extend(["-monitor", f"unix:/tmp/qemu.sock,server,nowait"])
 
+        if os.path.exists("/tmp/qemu.sock"):
+            os.remove("/tmp/qemu.sock")
+
+        proc_qemu = self._start_qemu(qemu_cmd=qemu_cmd)
+
+
+        try:
+            # wait for qemu monitor socket to open
+            self._wait_for_qemu_socket(proc_qemu=proc_qemu)
+
+            # Connect using socat 
+            self._save_vm()
+
+        finally:
+            # terminate the process. force exit after 5 secs
+            clean_proccess(proc=proc_qemu)
+        
     def _get_qemu_cmd(self, loadvm: bool = False) -> list[str]:
         """
         Returns the proper qemu command based on virtualization.
@@ -82,71 +102,7 @@ class QemuController:
 
         return cmd 
     
-
-    def _validate_virtualization(self, virtualization: str):
-        if virtualization not in ["macos", "linux"]:
-            raise ValueError("Virtualization must be 'macos' or 'linux' only") 
-            
-
-
-    def _wait_for_socket(self, file_socket: str, timeout: int=10):
-        start = time.time()
-
-        while time.time() - start < timeout:
-            try:
-                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-                    sock.connect(file_socket)
-                    return True
-            except (FileNotFoundError, ConnectionRefusedError):
-                time.sleep(0.5)
-
-        return False
-    
-    def wait_for_qemu_socket(self, proc_qemu: subprocess.Popen[str]):
-        if not self._wait_for_socket("/tmp/qemu.sock"):
-            # Try to capture qemu proc stderr
-            try:
-                _, qemu_stderr = proc_qemu.communicate(timeout=5)
-            except subprocess.TimeoutExpired:
-                proc_qemu.kill()
-                proc_qemu.wait()
-                qemu_stderr = "Timeout reading Qemu stderr"
-            
-            proc_qemu.terminate()
-            proc_qemu.wait()
-
-            raise RuntimeError(f"Qemu monitor socket failed to start in time. \nQemu stderr: {qemu_stderr}")
-        
-
-    def run_socat_save_vm(self):
-        # Connect using socat 
-        proc = subprocess.Popen(
-            ["socat", "-", "unix-connect:/tmp/qemu.sock"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-
-
-        try:
-            stdout, stderr = proc.communicate(input=f"savevm {self.snapshot_name}\n", timeout=10)
-        
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
-
-            raise RuntimeError("socat timed out while sending savevm command")
-        
-        finally:
-            # proc is still running
-            self._cleanup_proc_gracefully(proc=proc)
-                
-        
-        print("socat output: ", stdout)
-
-        # 0 means success
-        if proc.returncode != 0:
-            raise RuntimeError(f"socat exited with error: \n{stderr}")
-        
-
-    def start_qemu(self, qemu_cmd: list[str]) -> subprocess.Popen[str]:
+    def _start_qemu(self, qemu_cmd: list[str]) -> subprocess.Popen[str]:
         try:
             proc_qemu = subprocess.Popen(
                 qemu_cmd,
@@ -158,38 +114,38 @@ class QemuController:
             
         except FileNotFoundError:
             raise RuntimeError("Qemu binary not found. Not installed?")
+    
+    def _wait_for_qemu_socket(self, proc_qemu: subprocess.Popen[str]):
+        if wait_for_file_socket_availability("/tmp/qemu.sock"): 
+            return
 
+        # get stderrr if socket timed out
+        try:
+            _, qemu_stderr = proc_qemu.communicate(timeout=5) #
+        except subprocess.TimeoutExpired:
+            qemu_stderr = "Timeout reading Qemu stderr"
+        finally: 
+            clean_proccess(proc_qemu)
 
-    def create_snapshot(self):
+        raise RuntimeError(f"Qemu monitor socket failed to start in time. \nQemu stderr: {qemu_stderr}")
 
-        qemu_cmd = self._get_qemu_cmd()
-
-        # using file based socket on /tmp/qmp.sock
-        qemu_cmd.extend(["-monitor", f"unix:/tmp/qemu.sock,server,nowait"])
-
-        if os.path.exists("/tmp/qemu.sock"):
-            os.remove("/tmp/qemu.sock")
-
-        proc_qemu = self.start_qemu(qemu_cmd=qemu_cmd)
+    def _save_vm(self):
+        # Connect using socat 
+        proc = subprocess.Popen(
+            ["socat", "-", "unix-connect:/tmp/qemu.sock"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
         try:
-            # wait for qemu monitor socket to open
-            self.wait_for_qemu_socket(proc_qemu=proc_qemu)
-
-            # Connect using socat 
-            self.run_socat_save_vm()
-
+            stdout, stderr = proc.communicate(input=f"savevm {self.snapshot_name}\n", timeout=10)
+        
+        except subprocess.TimeoutExpired:
+            raise subprocess.TimeoutExpired("socat timed out while sending savevm command", timeout=10)
         finally:
-            # terminate the process. force exit after 5 secs
-            self._cleanup_proc_gracefully(proc_qemu)
+            clean_proccess(proc=proc)
+        
+        print("socat output: ", stdout)
 
-
-    def _cleanup_proc_gracefully(self, proc: subprocess.Popen[str], timeout: int = 5):
-        if proc.poll() is None:
-            proc.terminate()
-
-            try:
-                proc.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait()
+        # 0 means success
+        if proc.returncode != 0:
+            raise RuntimeError(f"socat exited with error: \n{stderr}")
+        
