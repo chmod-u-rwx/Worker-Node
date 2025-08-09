@@ -18,7 +18,3 @@ def test_qemu_controller():
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         ).returncode != 0, "QEMU process is still running after stop"
-
-
-if __name__ == "__main__":
-    test_qemu_controller()
