@@ -116,3 +116,7 @@ class QemuController:
 
         last_error = result.stderr.strip() if result else "No result from SSH command"
         raise TimeoutError(f"SSH connection failed. Last error: {last_error}")
+
+    def delete(self):
+        ...
+
