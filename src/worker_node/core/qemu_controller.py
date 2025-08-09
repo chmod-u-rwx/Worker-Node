@@ -38,13 +38,17 @@ class QemuController:
         if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
 
+        self.status = QemuStatus.STARTED
         try:
             start_time = time.perf_counter()
+            
             self.proc = subprocess.Popen(command)
-
+            time.sleep(0.5)
+            if self.proc.poll() is not None:
+                raise RuntimeError(f"Failed to start QEMU process due to an error in the command. Return Code {self.proc.returncode}")
+            
             if (self.check_ssh_connection()):
                 self.boot_time = (time.perf_counter() - start_time)*1000
-                self.status = QemuStatus.STARTED
 
             print(f"VM booted in {self.boot_time:.2f} ms.")
 
