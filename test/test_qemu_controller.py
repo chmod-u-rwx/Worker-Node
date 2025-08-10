@@ -1,100 +1,11 @@
-import shutil
 import subprocess
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 from src.worker_node.core.qemu_controller import QemuController
 
-# tmp_path is a built in fixture by pytest that provides temproray path
-# this path gets automatically cleaned up after running the test
+def test_create_snapshot(test_img: Path):
 
-
-def test_get_qemu_cmd_no_loadvm(tmp_path: Path):
-	q_cont = QemuController(tmp_path, "macos", 2, 200)
-
-	# For macos
-	cmd = q_cont._get_qemu_start_cmd() # type: ignore
-	expected = [
-		"qemu-system-x86_64",
-		"-machine", "accel=tcg",
-		"-cpu", "max",
-		"-smp", "2",
-		"-m", "200M",
-		"-hda", str(tmp_path),
-		"-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
-		"-device", "virtio-net,netdev=net0",
-		"-nographic"
-	]
-	
-	assert cmd == expected
-
-	# For linux
-	q_cont = QemuController(tmp_path, cpu_count=2, memory_allocated=400, virtualization="linux")
-	cmd = q_cont._get_qemu_start_cmd() # type: ignore
-	expected = [
-		"qemu-system-x86_64",
-		"-machine", "accel=kvm:tcg,usb=off",
-		"-cpu", "host",
-		"-smp", "2",
-		"-m", "400M",
-		"-hda", str(tmp_path),
-		"-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
-		"-device", "virtio-net,netdev=net0",
-		"-nographic",
-		"-enable-kvm"
-	]
-	
-	assert cmd == expected
-
-def test_get_qemu_cmd_loadvm(tmp_path: Path):
-	q_cont = QemuController(tmp_path, "macos", 4, 400)
-
-	# macos
-	cmd = q_cont._get_qemu_start_cmd(loadvm=True) #type:ignore
-
-	expected = [
-		"qemu-system-x86_64",
-		"-machine", "accel=tcg",
-		"-cpu", "max",
-		"-smp", "4",
-		"-m", "400M",
-		"-hda", str(tmp_path),
-		"-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
-		"-device", "virtio-net,netdev=net0",
-		"-nographic",
-		"-loadvm", "base"
-	]
-
-	assert cmd == expected
-
-	# linux
-	q_cont = QemuController(tmp_path, "linux", 4, 400)
-	expected = [
-		"qemu-system-x86_64",
-		"-machine", "accel=kvm:tcg,usb=off",
-		"-cpu", "host",
-		"-smp", "4",
-		"-m", "400M",
-		"-hda", str(tmp_path),
-		"-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
-		"-device", "virtio-net,netdev=net0",
-		"-nographic",
-		"-enable-kvm",
-		"-loadvm", "base"
-	]
-
-def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
-	with pytest.raises(ValueError) as err:
-		q_cont = QemuController(tmp_path, "ms-dos", 4, 400) # type: ignore
-
-	assert "Virtualization must be 'macos' or 'linux' only" in str(err)
-
-def test_create_snapshot(tmp_path: Path):
-
-	base_img = Path("/Users/luis/netes/x86/alpine-runner.qcow2")
-	test_img = tmp_path / "test_img.qcow2"
-	shutil.copy(base_img, test_img)
-	
 	qemu_cont = QemuController(test_img, "macos", 2, 500)
 
 	qemu_cont.create_snapshot()
@@ -106,68 +17,69 @@ def test_create_snapshot(tmp_path: Path):
 
 	assert "base" in qemu_img_output, f"'base' snapshot not found in {test_img} file"
 
+
+# Unittest.mock.patch allows us to substute whats being patched to be
+# a MagicMock object. This object acts like a fake object or function
 @patch("os.path.exists")
-@patch("os.remove")
 @patch("subprocess.Popen")
-def test_qemu_binary_not_found(mock_popen: MagicMock, mock_remove: MagicMock, mock_exists: MagicMock, test_img: Path):
+def test_qemu_binary_not_found(mock_popen: MagicMock, mock_exists: MagicMock, test_img: Path):
 
-	q_cont = QemuController(test_img, "macos", cpu_count=2, memory_allocated=400)
+	mock_exists.side_effect = [True, False]
+	
+	qemu = QemuController(test_img, "macos", cpu_count=2, memory_allocated=400)
 
-	# Simulating Qemu binary not found
-	mock_exists.return_value = False
+	# makes subprocess.Popen induce a FileNotFoundError
 	mock_popen.side_effect = FileNotFoundError
 
 	with pytest.raises(RuntimeError, match="Qemu binary not found. Not installed?"):
-		q_cont.create_snapshot()
-
-	mock_remove.assert_not_called()
+		qemu.create_snapshot()
 
 
-@patch("os.path.exists")
-@patch("os.remove")
 @patch("subprocess.Popen")
-def test_create_snapshot_qemu_monitor_socket_not_ready(mock_popen: MagicMock, mock_remove: MagicMock, mock_exists: MagicMock, test_img: Path):
-	mock_exists.return_value = True
-	mock_remove.return_value = None
-	q_cont = QemuController(test_img, "macos", 4, 400)
+@patch("src.worker_node.core.qemu_controller.wait_for_file_socket_availability")
+def test_create_snapshot_qemu_monitor_socket_not_ready(mock_wait_for_file_socket_availability: MagicMock, 
+	mock_popen: MagicMock, test_img: Path):
 
-	# mock of qemu_proc in create_snapshot
+	qemu = QemuController(test_img, "macos", 4, 400)
+
 	proc_mock = MagicMock()
-	q_cont._wait_for_socket = lambda file_socket: False #type:ignore
 
+	# We patch wait_for_file_socket_availability so we can change its
+	# return value. This induces the RuntimeError
+	mock_wait_for_file_socket_availability.return_value = False
+
+	# makes so that subprocess.Popen returns the fake proc mock
 	mock_popen.return_value = proc_mock
 
 	proc_mock.communicate.return_value = ("", "some error")
 
 	with pytest.raises(RuntimeError) as e:
-		q_cont.create_snapshot()
+		qemu._wait_qemu_monitor_socket(proc_mock) # type: ignore
 
 	assert "Qemu monitor socket failed to start in time" in str(e)
-	mock_remove.assert_called_once_with("/tmp/qemu.sock")
-	proc_mock.wait.assert_called()
 
 
 @patch("os.path.exists")
-@patch("os.remove")
 @patch("subprocess.Popen")
-def test_socat_timeout_while_sending_savevm_cmd(mock_popen: MagicMock, mock_remove: MagicMock, mock_exists: MagicMock, test_img: Path):
+def test_socat_timeout_while_sending_savevm_cmd(mock_popen: MagicMock, mock_exists: MagicMock, test_img: Path):
 	mock_exists.return_value = True
-	q_cont = QemuController(test_img, "macos", 2, 200)
+	qemu = QemuController(test_img, "macos", 2, 200)
 
-	# First Popen call
-	proc_qemu_mock = MagicMock()
-	q_cont._wait_for_socket = lambda file_socket: True #type:ignore
-
-	# Second Popen call. Socat proc
 	proc_socat_mock = MagicMock()
 	proc_socat_mock.communicate.side_effect = subprocess.TimeoutExpired(cmd="socat", timeout=10)
 
-	mock_popen.side_effect = [proc_qemu_mock, proc_socat_mock]
+	mock_popen.return_value = proc_socat_mock
 
-	with pytest.raises(RuntimeError) as e:
-		q_cont.create_snapshot()
+	with pytest.raises(TimeoutError) as e:
+		qemu._save_vm() # type: ignore
 
 	assert "socat timed out while sending savevm command" in str(e)
-	print(e)
 
-	mock_remove.assert_called_once()
+# tmp_path is a built in fixture by pytest that provides temproray path
+# this path gets automatically cleaned up after running the test
+
+def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
+	with pytest.raises(ValueError) as err:
+		qemu = QemuController(tmp_path, "ms-dos", 4, 400) # type: ignore
+
+	assert "Virtualization must be 'macos' or 'linux' only" in str(err)

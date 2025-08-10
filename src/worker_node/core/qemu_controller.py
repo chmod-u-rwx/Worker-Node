@@ -1,9 +1,11 @@
 import subprocess
 import os
+import shutil
 from pathlib import Path
 from enum import Enum
 from ..helpers.process import clean_proccess
 from ..helpers.socket import wait_for_file_socket_availability
+from ..config import BASE_IMG_FILE
 
 class QemuStatus(Enum):
     STARTED = 1
@@ -12,14 +14,15 @@ class QemuStatus(Enum):
 
 class QemuController:
     def __init__(self, img_path: Path, virtualization: str, cpu_count: int = 1, memory_allocated: int = 0, ) -> None:
-
-        virtualization = virtualization.lower() 
-
-        if not img_path.exists():
+        if not os.path.exists(BASE_IMG_FILE):
             raise FileNotFoundError("Base img does not exist")
 
+        virtualization = virtualization.lower() 
         if virtualization not in ["macos", "linux"]:
             raise ValueError("Virtualization must be 'macos' or 'linux' only") 
+        
+        # Copy the base img file into img_path
+        shutil.copy(BASE_IMG_FILE, img_path)
 
         self.virtualization = virtualization
         self.img_path = img_path 
@@ -45,18 +48,13 @@ class QemuController:
 
     def create_snapshot(self):
         # using file based socket, to interact with qemu monitor
-        qemu_cmd = self._get_qemu_cmd()
-        qemu_cmd.extend(["-monitor", f"unix:/tmp/qemu.sock,server,nowait"])
 
-        if os.path.exists("/tmp/qemu.sock"):
-            os.remove("/tmp/qemu.sock")
 
-        proc_qemu = self._start_qemu(qemu_cmd=qemu_cmd)
-
+        proc_qemu = self._start_qemu_with_monitor()
 
         try:
             # wait for qemu monitor socket to open
-            self._wait_for_qemu_socket(proc_qemu=proc_qemu)
+            self._wait_qemu_monitor_socket(proc_qemu)
 
             # Connect using socat 
             self._save_vm()
@@ -68,16 +66,7 @@ class QemuController:
     def _get_qemu_cmd(self, loadvm: bool = False) -> list[str]:
         """
         Returns the proper qemu command based on virtualization.
-        This command assumes qcow2 img has no alpine installed yet
-
-        Args:
-            qcow2_file (Path): 
-            alpine_iso (Path): 
-            virtualization (str): macos or linux
-            loadvm (bool): loads self.snapshot_name if True, otherwise boot from qcow2 img
-
-        Returns:
-            str: The qemu command
+        Loads self.snapshot if loadvm = True
         """
         
         accel = "tcg" if self.virtualization == "macos" else "kvm:tcg,usb=off"
@@ -102,7 +91,13 @@ class QemuController:
 
         return cmd 
     
-    def _start_qemu(self, qemu_cmd: list[str]) -> subprocess.Popen[str]:
+    def _start_qemu_with_monitor(self) -> subprocess.Popen[str]:
+        qemu_cmd = self._get_qemu_cmd()
+        qemu_cmd.extend(["-monitor", f"unix:/tmp/qemu.sock,server,nowait"])
+
+        if os.path.exists("/tmp/qemu.sock"):
+            os.remove("/tmp/qemu.sock")
+
         try:
             proc_qemu = subprocess.Popen(
                 qemu_cmd,
@@ -115,14 +110,22 @@ class QemuController:
         except FileNotFoundError:
             raise RuntimeError("Qemu binary not found. Not installed?")
     
-    def _wait_for_qemu_socket(self, proc_qemu: subprocess.Popen[str]):
+    def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str]): 
+        """
+        This wait the qemu monitor socket if its ready so that we can
+        connect to it and save the vm.
+        """
+
         if wait_for_file_socket_availability("/tmp/qemu.sock"): 
             return
 
-        # get stderrr if socket timed out
         try:
-            _, qemu_stderr = proc_qemu.communicate(timeout=5) #
+            # Try to get the stderr from qemu to give a more detailed
+            # error message
+            _, qemu_stderr = proc_qemu.communicate(timeout=5) 
+
         except subprocess.TimeoutExpired:
+            # fallback if we cant get the stderr
             qemu_stderr = "Timeout reading Qemu stderr"
         finally: 
             clean_proccess(proc_qemu)
@@ -130,22 +133,27 @@ class QemuController:
         raise RuntimeError(f"Qemu monitor socket failed to start in time. \nQemu stderr: {qemu_stderr}")
 
     def _save_vm(self):
-        # Connect using socat 
+        """ 
+        Sends a savevm command to the qemu monitor socket by connecting to it using
+        socat.
+        """
+
         proc = subprocess.Popen(
             ["socat", "-", "unix-connect:/tmp/qemu.sock"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
         try:
-            stdout, stderr = proc.communicate(input=f"savevm {self.snapshot_name}\n", timeout=10)
+            # sending the savevm command
+            _, stderr = proc.communicate(input=f"savevm {self.snapshot_name}\n", timeout=10)
         
         except subprocess.TimeoutExpired:
-            raise subprocess.TimeoutExpired("socat timed out while sending savevm command", timeout=10)
+            # happens if for some reason socat cant send the command until timeout
+            raise TimeoutError("socat timed out while sending savevm command")
+        
         finally:
             clean_proccess(proc=proc)
         
-        print("socat output: ", stdout)
-
-        # 0 means success
+        # the process when wrong if its not 0
         if proc.returncode != 0:
             raise RuntimeError(f"socat exited with error: \n{stderr}")
         
