@@ -99,8 +99,13 @@ class QemuController:
     def create_snapshot(self):
         proc_qemu = self._start_qemu_with_monitor()
         try:
+            # This only checks monitor socket and it gets ready
+            # before the vm has fully booted up
             self._wait_qemu_monitor_socket(proc_qemu)
-            # self.wait_for_ssh_connection()
+            
+            # By checking for ssh, we ensure that alpine linux
+            # is completely booted before savevm
+            self.wait_for_ssh_connection()
             self._save_vm()
         finally:
             clean_proccess(proc=proc_qemu)
