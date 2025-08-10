@@ -92,7 +92,7 @@ class QemuPool:
         memory_per_machine = MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
             path = Path("./test/path") # update this
-            qemu = QemuController(path, 1, memory_per_machine)
+            qemu = QemuController(path, "linux", 1, memory_per_machine)
             self.warm_queue.append(qemu)
      
 

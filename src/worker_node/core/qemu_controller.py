@@ -24,39 +24,27 @@ class QemuController:
         if virtualization not in ["macos", "linux"]:
             raise ValueError("Virtualization must be 'macos' or 'linux' only") 
         
-        # Copy the base img file into img_path
-        shutil.copy(BASE_IMG_FILE, img_path)
-
         self.virtualization = virtualization
         self.img_path = img_path 
-
         self.cpu_count = cpu_count
         self.snapshot_name = "base"
         self.memory_allocated = memory_allocated
         self.status = QemuStatus.STOPPED
         self.boot_time = 0
 
+        # Copy the base img file into img_path
+        shutil.copy(BASE_IMG_FILE, img_path)
+        self.create_snapshot()
+
     def start(self):
         if self.img_path.exists() == False:
             raise RuntimeError(f"QEMU img not found at {self.img_path}. Ensure that PATH to img is correct.")
-        
-        command = [
-            "qemu-system-x86_64",
-            "-machine", "accel=kvm:tcg,usb=off",
-            "-m", f"{self.memory_allocated}M",
-            "-cpu", "host",
-            "-smp", str(self.cpu_count),
-            "-hda", str(self.img_path),
-            "-loadvm", str(self.snapshot_name),
-            "-net", "nic", "-net", "user,hostfwd=tcp::2222-:22",
-            "-nographic",
-            "-enable-kvm"
-        ]
 
         if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
+        
+        command = self._get_qemu_cmd(True)
 
-        self.status = QemuStatus.STARTED
         try:
             start_time = time.perf_counter()
             
@@ -65,11 +53,12 @@ class QemuController:
             if self.proc.poll() is not None:
                 raise RuntimeError(f"Failed to start QEMU process due to an error in the command. Return Code {self.proc.returncode}")
             
-            if (self.check_ssh_connection()):
+            if (self.wait_for_ssh_connection()):
                 self.boot_time = (time.perf_counter() - start_time)*1000
 
             print(f"VM booted in {self.boot_time:.2f} ms.")
 
+            self.status = QemuStatus.STARTED
         except FileNotFoundError:
             self.status = QemuStatus.STOPPED
             raise RuntimeError("QEMU img not found. Ensure that PATH to img is correct.")
@@ -108,20 +97,12 @@ class QemuController:
 
 
     def create_snapshot(self):
-        # using file based socket, to interact with qemu monitor
-
-
         proc_qemu = self._start_qemu_with_monitor()
-
         try:
-            # wait for qemu monitor socket to open
             self._wait_qemu_monitor_socket(proc_qemu)
-
-            # Connect using socat 
+            # self.wait_for_ssh_connection()
             self._save_vm()
-
         finally:
-            # terminate the process. force exit after 5 secs
             clean_proccess(proc=proc_qemu)
         
     def _get_qemu_cmd(self, loadvm: bool = False) -> list[str]:
@@ -218,7 +199,7 @@ class QemuController:
         if proc.returncode != 0:
             raise RuntimeError(f"socat exited with error: \n{stderr}")
         
-    def check_ssh_connection(self, port:int=2222, user:str="root", timeout:int=60) -> bool:
+    def wait_for_ssh_connection(self, port:int=2222, user:str="root", timeout:int=60) -> bool:
         """
         Poll SSH on localhost:port until SSH responds with 'Permission denied',
         indicating the server is up and requesting authentication.

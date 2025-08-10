@@ -2,13 +2,14 @@ import subprocess
 import shutil
 from pathlib import Path
 from src.worker_node.core.qemu_controller import QemuController
+from src.worker_node.config import BASE_IMG_FILE
 
 def test_port(tmp_path: Path):
-	base_img = Path("/Users/luis/netes/x86/alpine-runner.qcow2")
+	base_img = Path(BASE_IMG_FILE)
 	test_img = tmp_path / "test_img.qcow2"
 	shutil.copy(base_img, test_img)
 	
-	qemu_cont = QemuController(test_img, "macos", 2, 500)
+	qemu_cont = QemuController(test_img, "linux", 2, 500)
 
 	qemu_cont.create_snapshot()
 
