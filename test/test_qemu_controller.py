@@ -1,5 +1,6 @@
 
 import os
+import time
 import pytest
 import subprocess
 from pathlib import Path
@@ -8,7 +9,7 @@ from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 
 
 def test_create_snapshot(test_img: Path):
-    QemuController(test_img, "linux", 2, 500)
+    QemuController(test_img, "macos", 2, 500)
     qemu_img_output = subprocess.check_output(
         ["qemu-img", "info", str(test_img)],
         text=True
@@ -103,7 +104,7 @@ def test_qemu_initialization(test_img: Path):
     os.remove(test_img)
 
 def test_qemu_start(test_img: Path):
-    qemu = QemuController(test_img, "linux", 2, 500)
+    qemu = QemuController(test_img, "macos", 2, 500)
     try:
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
@@ -186,3 +187,24 @@ def test_qemu_boot_time(test_img: Path):
     finally:
         if qemu.status == QemuStatus.STARTED:
             qemu.stop()
+
+
+def test_freeze_resume_vm(test_img: Path):
+    file_socket = "/tmp/qemu.sock"
+    qemu = QemuController(test_img, "macos", cpu_count, memory_allocated)
+    qemu.start()
+    qemu._send_command_to_qemu_monitor(file_socket, "stop") # type: ignore
+    assert "VM status: paused" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
+
+    time.sleep(2)
+    result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
+    cpu_usage = result.stdout.strip()
+    assert cpu_usage == "0.0"
+
+    qemu._send_command_to_qemu_monitor(file_socket, "cont") # type: ignore
+    assert "VM status: running" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
+
+    time.sleep(0.5)
+    result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
+    cpu_usage = result.stdout.strip()
+    assert cpu_usage != "0.0"
