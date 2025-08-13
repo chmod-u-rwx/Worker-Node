@@ -95,7 +95,7 @@ class QemuController:
             cmd = f"python3 {file_name} {type}"
 
             if (not self.check_ssh_connection()):
-                raise ConnectionError("SSH connection failed. QEMU is not ready for command execution.")
+                raise ConnectionError("SSH test connection failed. QEMU is not ready for command execution.")
             
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             self.ssh.connect("localhost", port=2222, username="root", password="root", timeout=1)

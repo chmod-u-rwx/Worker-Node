@@ -129,9 +129,7 @@ def test_run_command_in_vm():
         sftp.close()
 
         assert qemu.run_command(path_in_vm, "stdout"), "Command execution in VM failed for stdout"
-        print(qemu.run_command(path_in_vm, "stdout"))
         assert qemu.run_command(path_in_vm, "stderr"), "Command execution in VM failed for stderr"
-        print(qemu.run_command(path_in_vm, "stderr"))
 
 
     finally:
