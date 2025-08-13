@@ -1,4 +1,5 @@
 from pathlib import Path
+import paramiko
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 import subprocess
 
@@ -103,4 +104,37 @@ def test_qemu_boot_time():
         assert qemu.boot_time < 1000, "QEMU boot time exceeded expected threshold"
     finally:
         if qemu.status == QemuStatus.STARTED:
+            qemu.stop()
+
+
+def test_run_command_in_vm():
+    qemu = QemuController(
+        image_path,
+        cpu_count,
+        memory_allocated
+    )
+
+    test_file_path = Path("test/files_for_transfer/test_in_vm.py")
+    path_in_vm = "/root/test_in_vm"
+    try:
+        qemu.start()
+        assert qemu.status == QemuStatus.STARTED
+        assert qemu.check_ssh_connection(), "SSH connection failed after starting QEMU"        
+        assert test_file_path.exists(), "Test file for command execution does not exist"
+
+        qemu.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        qemu.ssh.connect("localhost", port=2222, username="root", password="root")
+        sftp = qemu.ssh.open_sftp()
+        assert sftp.put(str(test_file_path), path_in_vm), "Failed to transfer test file to VM"
+        sftp.close()
+
+        assert qemu.run_command(path_in_vm, "stdout"), "Command execution in VM failed for stdout"
+        print(qemu.run_command(path_in_vm, "stdout"))
+        assert qemu.run_command(path_in_vm, "stderr"), "Command execution in VM failed for stderr"
+        print(qemu.run_command(path_in_vm, "stderr"))
+
+
+    finally:
+        if qemu.status == QemuStatus.STARTED:
+            qemu.ssh.close()
             qemu.stop()

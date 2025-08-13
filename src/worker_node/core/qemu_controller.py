@@ -1,8 +1,10 @@
+import os # type:ignore
 from pathlib import Path
 from enum import Enum
 import subprocess
-import shlex
+import shlex # type:ignore
 import time
+import paramiko
 
 class QemuStatus(Enum):
     STARTED = 1
@@ -12,11 +14,12 @@ class QemuStatus(Enum):
 class QemuController:
     def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0) -> None:
         self.img_path = img_path 
-        self.snapshot_name = "kvm-fastboot" #"base"
+        self.snapshot_name = "base"
         self.cpu_count = cpu_count
         self.memory_allocated = memory_allocated
         self.status = QemuStatus.STOPPED
         self.boot_time = 0
+        self.ssh = paramiko.SSHClient()
 
     def start(self):
         if self.img_path.exists() == False:
@@ -38,7 +41,6 @@ class QemuController:
         if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
 
-        self.status = QemuStatus.STARTED
         try:
             start_time = time.perf_counter()
             
@@ -50,6 +52,7 @@ class QemuController:
             if (self.check_ssh_connection()):
                 self.boot_time = (time.perf_counter() - start_time)*1000
 
+            self.status = QemuStatus.STARTED
             print(f"VM booted in {self.boot_time:.2f} ms.")
 
         except FileNotFoundError:
@@ -82,41 +85,61 @@ class QemuController:
     def reset(self) -> None:
         ...
     
-    def run_command(self):
-        ...
+    def run_command(self, file_name: str, type:str) -> str:
+        start_time = time.perf_counter()
+        if self.status != QemuStatus.STARTED:
+            raise RuntimeError("QEMU is not STARTED. Cannot run command.")
+        
+        try:
+            self.status = QemuStatus.RUNNING
+            cmd = f"python3 {file_name} {type}"
+
+            if (not self.check_ssh_connection()):
+                raise ConnectionError("SSH connection failed. QEMU is not ready for command execution.")
+            
+            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self.ssh.connect("localhost", port=2222, username="root", password="root", timeout=1)
+
+            stdin, stdout, stderr = self.ssh.exec_command(cmd) #type:ignore
+            returncode = stdout.channel.recv_exit_status()
+
+            if returncode != 0:
+                return f"Error: {stderr.read().decode("utf-8")}"
+            
+            elapsed_time = (time.perf_counter() - start_time) * 1000
+            print(f"Command executed in {elapsed_time:.2f} ms.")
+            return f"Output: {stdout.read().decode("utf-8")}"
+        
+        except paramiko.SSHException as e:
+            raise RuntimeError(f"SSH connection error: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"An error occurred while running the command: {str(e)}")
+        finally:
+            self.status = QemuStatus.STARTED
+            self.ssh.close()
+
     
     def get_status(self):
         ...
-
-    def check_ssh_connection(self, port:int=2222, user:str="root", timeout:int=60) -> bool:
+    
+    def check_ssh_connection(self, port: int = 2222, user: str = "root", password:str ="root", timeout: int = 60) -> bool:
         """
-        Poll SSH on localhost:port until SSH responds with 'Permission denied',
-        indicating the server is up and requesting authentication.
+        Poll SSH on localhost:port until authentication succeeds,
+        meaning the server is ready for communication.
         """
-        ssh_cmd = (
-            f"ssh -p {port} -o StrictHostKeyChecking=no "
-            f"-o BatchMode=yes -o ConnectTimeout=1 {user}@localhost true"
-        )
 
         start_time = time.perf_counter()
-        result = None
-
         while (time.perf_counter() - start_time) < timeout:
-            result = subprocess.run(
-                shlex.split(ssh_cmd),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
+            try:
+                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                self.ssh.connect("localhost", port=port, username=user, password=password, timeout=1)
+                self.ssh.close()
+                return True
+            except Exception:
+                time.sleep(0.05)
 
-            if "Permission denied" in result.stderr:
-                return True # if returned SSH can connect
-            
-            time.sleep(0.05)
-
-        last_error = result.stderr.strip() if result else "No result from SSH command"
-        raise TimeoutError(f"SSH connection failed. Last error: {last_error}")
-
+        raise TimeoutError("SSH authentication failed. Server not ready.")
+    
     def delete(self):
         ...
 
