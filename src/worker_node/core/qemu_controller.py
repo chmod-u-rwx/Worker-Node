@@ -97,8 +97,16 @@ class QemuController:
     def run_command(self):
         ...
     
-    def get_status(self):
-        ...
+    def get_status(self) -> dict[str, str]:
+        result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "%cpu=,mem=,pid=", ""], capture_output=True, text=True)
+        cpu_usage, memory_usage, pid = result.stdout.strip().split(" ")
+        print(cpu_usage, memory_usage, pid)
+        return {
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage,
+            "pid": pid
+        }
+
 
 
     def create_snapshot(self):
@@ -194,8 +202,6 @@ class QemuController:
         try:
             # sending the savevm command
             stdout, stderr = proc.communicate(input=f"{command}\n", timeout=10)
-            ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
-            stdout = ansi_escape.sub('', stdout)
         
         except subprocess.TimeoutExpired:
             # happens if for some reason socat cant send the command until timeout
