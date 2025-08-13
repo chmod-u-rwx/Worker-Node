@@ -1,5 +1,4 @@
 import os
-import re
 import shutil
 import shlex
 import time
@@ -11,6 +10,7 @@ from typing import Optional
 from ..helpers.process import clean_proccess
 from ..helpers.socket import wait_for_file_socket_availability
 from ..config import BASE_IMG_FILE
+from ..models.qemu_load import QemuLoad
 
 class QemuStatus(Enum):
     STARTED = 1
@@ -97,17 +97,20 @@ class QemuController:
     def run_command(self):
         ...
     
-    def get_status(self) -> dict[str, str]:
-        result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "%cpu=,mem=,pid=", ""], capture_output=True, text=True)
+    def get_status(self):
+        ...
+
+    def get_current_load(self) -> QemuLoad:
+        result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "%cpu=,rss=,pid="], capture_output=True, text=True)
         cpu_usage, memory_usage, pid = result.stdout.strip().split(" ")
-        print(cpu_usage, memory_usage, pid)
-        return {
-            "cpu_usage": cpu_usage,
-            "memory_usage": memory_usage,
-            "pid": pid
-        }
 
-
+        return QemuLoad(
+            # %cpu returns the usage summed across all cores, so we have to divide it
+            # by the cpu_count normalizes it relative to the allocated cpu_count
+            cpu_usage=(float(cpu_usage)/self.cpu_count),
+            memory_usage=float(memory_usage),
+            pid=int(pid)
+        )
 
     def create_snapshot(self):
         proc_qemu = self._start_qemu_no_loadvm()
@@ -258,7 +261,6 @@ class QemuController:
         except (RuntimeError, TimeoutError) as e:
             raise RuntimeError("Failed to freeze vm") from e
         
-    
     def resume(self):
         if self.status != QemuStatus.STARTED:
             raise Exception("Qemu has not yet started")
