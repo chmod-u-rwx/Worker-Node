@@ -88,7 +88,7 @@ def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
 
 
 cpu_count = 2
-memory_allocated = 500
+memory_allocated = 512
 
 def test_qemu_initialization(test_img: Path):
     qemu = QemuController(
@@ -170,7 +170,7 @@ def test_qemu_command_error(test_img: Path):
         memory_allocated
     )
     with pytest.raises(RuntimeError, match="Failed to start QEMU process due to an error in the command"):
-        cmd_error.img_path = Path("./alpine/alpine-standard-3.22.1-x86_64.iso")
+        cmd_error.img_path = Path("/home/dan/Projects/qemu-node/alpine-stndrd/alpine-standard-3.22.1-x86_64.iso")
         cmd_error.start()
 
 def test_qemu_boot_time(test_img: Path):
@@ -189,19 +189,15 @@ def test_qemu_boot_time(test_img: Path):
             qemu.stop()
 
 
-def test_run_command_in_vm():
-    qemu = QemuController(
-        image_path,
-        cpu_count,
-        memory_allocated
-    )
+def test_run_command_in_vm(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 500)
 
     test_file_path = Path("test/files_for_transfer/test_in_vm.py")
     path_in_vm = "/root/test_in_vm"
     try:
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
-        assert qemu.check_ssh_connection(), "SSH connection failed after starting QEMU"        
+        assert qemu.wait_for_ssh_connection(), "SSH connection failed after starting QEMU"        
         assert test_file_path.exists(), "Test file for command execution does not exist"
 
         qemu.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())

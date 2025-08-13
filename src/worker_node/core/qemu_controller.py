@@ -1,11 +1,9 @@
 import os
 import shutil
-import shlex
 import time
 import subprocess
 from pathlib import Path
 from enum import Enum
-
 from ..helpers.process import clean_proccess
 from ..helpers.socket import wait_for_file_socket_availability
 from ..config import BASE_IMG_FILE
@@ -101,7 +99,7 @@ class QemuController:
             self.status = QemuStatus.RUNNING
             cmd = f"python3 {file_name} {type}"
 
-            if (not self.check_ssh_connection()):
+            if (not self.wait_for_ssh_connection()):
                 raise ConnectionError("SSH test connection failed. QEMU is not ready for command execution.")
             
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -238,7 +236,7 @@ class QemuController:
         if proc.returncode != 0:
             raise RuntimeError(f"socat exited with error: \n{stderr}")
         
-    def wait_for_ssh_connection(self, port:int=2222, user:str="root", timeout:int=60) -> bool:
+    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> bool:
         """
         Poll SSH on localhost:port until authentication succeeds,
         meaning the server is ready for communication.
