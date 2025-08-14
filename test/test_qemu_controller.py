@@ -139,28 +139,40 @@ def test_start_command_fails(test_img: Path):
         with pytest.raises(RuntimeError, match="Failed to start QEMU process"):
             qemu.start()
 
-def test_start_ssh_timeout(test_img: Path):
+@patch("src.worker_node.core.qemu_controller.subprocess.Popen")
+@patch("src.worker_node.core.qemu_controller.QemuController.create_snapshot", new=MagicMock())
+def test_start_wait_for_ssh_connection_timeout(mock_popen: MagicMock, test_img: Path):
+    fake_proc = MagicMock()
+    fake_proc.poll.return_value = None
+    fake_proc.returncode = 0
+    mock_popen.return_value = fake_proc
+
     qemu = QemuController(test_img, "linux", 2, 512)
+    qemu.ssh = MagicMock()
+    qemu.ssh.connect.side_effect = paramiko.SSHException("Unable to connect")
 
-    with patch("subprocess.Popen") as mock_popen, \
-         patch.object(QemuController, "wait_for_ssh_connection", return_value=False):
-
-        process_mock = MagicMock()
-        process_mock.poll.return_value = None
-        mock_popen.return_value = process_mock
-
+    with pytest.raises(RuntimeError, match="SSH authentication failed"):
         qemu.start()
-        assert qemu.status == QemuStatus.STARTED
 
-
+@patch("src.worker_node.core.qemu_controller.QemuController.create_snapshot", new=MagicMock())
 def test_qemu_stop(test_img: Path):
-    with patch.object(QemuController, 'wait_for_ssh_connection', return_value=True):
+    with patch.object(QemuController, 'wait_for_ssh_connection', return_value=True), \
+         patch("subprocess.Popen") as mock_popen:
+        
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.poll.return_value = None
+        mock_popen.return_value = mock_proc
+
         qemu = QemuController(test_img, "linux", 2, 500)
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
-        
+
         qemu.stop()
         assert qemu.status == QemuStatus.STOPPED
+        mock_proc.terminate.assert_called_once()
+
+        mock_proc.poll.assert_called()
 
 def test_qemu_stop_before_start(test_img: Path):
     with patch.object(QemuController, "wait_for_ssh_connection", return_value=True):

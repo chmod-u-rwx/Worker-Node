@@ -93,8 +93,7 @@ class QemuController:
         if self.status != QemuStatus.STARTED:
             raise RuntimeError("QEMU is not STARTED. Cannot run command.")
         
-        if (not self.wait_for_ssh_connection()):
-            raise ConnectionError("SSH test connection failed. QEMU is not ready for command execution.")
+        self.wait_for_ssh_connection()
         
         self.status = QemuStatus.RUNNING
         cmd = " ".join(command)
