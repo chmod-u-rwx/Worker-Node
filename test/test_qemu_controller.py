@@ -70,7 +70,7 @@ def test_send_command_to_qemu_monitor(mock_popen: MagicMock):
     assert stdout == "Stdout is okayy"
 
 @patch("subprocess.Popen")
-def test_socat_not_found(mock_popen: MagicMock, test_img: Path):
+def test_send_command_to_qemu_monitor_socat_not_found(mock_popen: MagicMock, test_img: Path):
     qemu = QemuController.__new__(QemuController)
     mock_popen.side_effect = FileNotFoundError()
 
@@ -78,7 +78,7 @@ def test_socat_not_found(mock_popen: MagicMock, test_img: Path):
         qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
 @patch("subprocess.Popen")
-def test_failed_to_start_socat(mock_popen: MagicMock, test_img: Path):
+def test_send_command_to_qemu_monitor_failed_to_start_socat(mock_popen: MagicMock, test_img: Path):
     mock_popen.side_effect = OSError("Some os error")
     qemu = QemuController.__new__(QemuController)
 
@@ -86,13 +86,23 @@ def test_failed_to_start_socat(mock_popen: MagicMock, test_img: Path):
         qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
 @patch("subprocess.Popen")
-def test_socat_timeout(mock_open: MagicMock, test_img: Path):
+def test_send_command_to_qemu_monitor_socat_timeout(mock_open: MagicMock, test_img: Path):
     proc_mock = MagicMock()
     proc_mock.communicate.side_effect = subprocess.TimeoutExpired("socat", 10)
     mock_open.return_value = proc_mock
     qemu = QemuController.__new__(QemuController)
     
     with pytest.raises(TimeoutError, match="socat timed out while sending command"):
+        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
+
+@patch("subprocess.Popen")
+def test_send_command_to_qemu_monitor_socat_exited_with_error(mock_open: MagicMock):
+    proc_mock = MagicMock()
+    mock_open.return_value = proc_mock
+    qemu = QemuController.__new__(QemuController) 
+    proc_mock.communicate.return_value = ("stdout", "Some error")
+
+    with pytest.raises(RuntimeError, match="socat exited with error: Some error"):
         qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
 # tmp_path is a built in fixture by pytest that provides temproray path

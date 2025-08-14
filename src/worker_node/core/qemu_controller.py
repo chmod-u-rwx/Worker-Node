@@ -227,7 +227,7 @@ class QemuController:
             clean_process(proc=proc)
         
         if proc.returncode != 0:
-            raise RuntimeError(f"socat exited with error: \n{stderr.strip()}")
+            raise RuntimeError(f"socat exited with error: {stderr.strip()}")
         
         if return_stdout:
             return stdout.strip()
