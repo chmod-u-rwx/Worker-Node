@@ -378,7 +378,7 @@ def test_freeze_resume_vm(test_img: Path):
     time.sleep(2)
     result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
     cpu_usage = result.stdout.strip()
-    assert cpu_usage > "0.0"
+    assert cpu_usage == "0.0"
 
     qemu.resume()
     assert "VM status: running" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
