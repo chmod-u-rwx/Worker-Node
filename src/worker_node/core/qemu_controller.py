@@ -117,6 +117,20 @@ class QemuController:
     def run_command(self):
         ...
     
+    def create_snapshot(self):
+        proc_qemu = self._start_qemu_no_loadvm()
+        try:
+            # This only checks monitor socket and it gets ready
+            # before the vm has fully booted up
+            self._wait_qemu_monitor_socket(proc_qemu)
+            
+            # By checking for ssh, we ensure that alpine linux
+            # is completely booted before savevm
+            self.wait_for_ssh_connection()
+            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"savevm {self.snapshot_name}")
+        finally:
+            clean_process(proc=proc_qemu)
+
     def get_resource_load(self) -> QemuLoad:
         if self.status != QemuStatus.STARTED:
             raise Exception("Qemu has not yet started")
@@ -135,25 +149,11 @@ class QemuController:
         return QemuLoad(
             # %cpu returns the usage summed across all cores, so we have to divide it
             # by the cpu_count normalizes it relative to the allocated cpu_count
-            cpu_usage=(float(cpu_usage)/self.cpu_count),
+            cpu_usage=(float(cpu_usage)/self.cpu_count), # in percentage
             memory_usage=float(memory_usage), # this is in KB
             pid=int(pid)
-        )
+        )    
 
-    def create_snapshot(self):
-        proc_qemu = self._start_qemu_no_loadvm()
-        try:
-            # This only checks monitor socket and it gets ready
-            # before the vm has fully booted up
-            self._wait_qemu_monitor_socket(proc_qemu)
-            
-            # By checking for ssh, we ensure that alpine linux
-            # is completely booted before savevm
-            self.wait_for_ssh_connection()
-            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"savevm {self.snapshot_name}")
-        finally:
-            clean_process(proc=proc_qemu)
-        
     def _get_qemu_cmd(self, loadvm: bool = False) -> list[str]:
         """
         Returns the proper qemu command based on virtualization.
@@ -185,6 +185,9 @@ class QemuController:
     
     def _start_qemu_no_loadvm(self) -> subprocess.Popen[str]:
         qemu_cmd = self._get_qemu_cmd()
+
+        if os.path.exists("/tmp/qemu.sock"):
+            os.remove("/tmp/qemu.sock")
 
         try:
             proc_qemu = subprocess.Popen(

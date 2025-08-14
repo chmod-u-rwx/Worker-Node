@@ -5,6 +5,7 @@ import pytest
 import subprocess
 from pathlib import Path
 from unittest.mock import patch, MagicMock
+from src.worker_node.models.qemu_load import QemuLoad
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 
 cpu_count = 2
@@ -193,7 +194,7 @@ def test_qemu_command_error(test_img: Path):
         memory_allocated
     )
     with pytest.raises(RuntimeError, match="Failed to start QEMU process due to an error in the command"):
-        cmd_error.img_path = Path("./alpine/alpine-standard-3.22.1-x86_64.iso")
+        cmd_error.img_path = Path("/Users/luis/netes/alpine-standard-3.22.1-x86_64.iso")
         cmd_error.start()
 
 def test_qemu_boot_time(test_img: Path):
@@ -232,6 +233,8 @@ def test_freeze_resume_vm(test_img: Path):
     cpu_usage = result.stdout.strip()
     assert cpu_usage != "0.0"
 
+    qemu.stop()
+
 def test_freeze_resume_failure_case(test_img: Path):
     qemu = QemuController(test_img, virtualization, cpu_count, memory_allocated)
 
@@ -250,6 +253,31 @@ def test_freeze_resume_failure_case(test_img: Path):
 
     with pytest.raises(RuntimeError, match="Failed to resume vm"):
         qemu.resume()
+
+    qemu.stop()
+
+@patch("subprocess.run")
+def test_get_resource_load(mock_run: MagicMock):
+    qemu = QemuController.__new__(QemuController)
+    qemu.status = QemuStatus.STARTED
+    qemu.proc = MagicMock()
+    qemu.cpu_count = 4
+    qemu.proc.pid = 44335         # %cpu memory pid
+    mock_run.return_value.stdout = "54.2 30000 44335" 
+    resource_load = qemu.get_resource_load()
+
+    mock_run.assert_called_once_with(
+        ["ps", "-p", "44335", "-o", "pcpu=,rss=,pid="],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    assert isinstance(resource_load, QemuLoad)
+    assert resource_load.cpu_usage == 54.2 / 4
+    assert resource_load.memory_usage == 30000
+    assert resource_load.pid == 44335
+
 
 @patch("subprocess.run")
 def test_get_resource_load_ps_not_found(mock_run: MagicMock):
