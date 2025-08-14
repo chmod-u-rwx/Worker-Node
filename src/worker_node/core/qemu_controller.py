@@ -5,8 +5,9 @@ import time
 import subprocess
 from pathlib import Path
 from enum import Enum
+from typing import Optional
 
-from ..helpers.process import clean_proccess
+from ..helpers.process import clean_process
 from ..helpers.socket import wait_for_file_socket_availability
 from ..config import BASE_IMG_FILE
 
@@ -40,6 +41,9 @@ class QemuController:
         if self.img_path.exists() == False:
             raise RuntimeError(f"QEMU img not found at {self.img_path}. Ensure that PATH to img is correct.")
 
+        if os.path.exists("/tmp/qemu.sock"):
+            os.remove("/tmp/qemu.sock")
+
         if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
         
@@ -48,7 +52,7 @@ class QemuController:
         try:
             start_time = time.perf_counter()
             
-            self.proc = subprocess.Popen(command)
+            self.proc = subprocess.Popen(command, text=True)
             time.sleep(0.5)
             if self.proc.poll() is not None:
                 raise RuntimeError(f"Failed to start QEMU process due to an error in the command. Return Code {self.proc.returncode}")
@@ -88,16 +92,41 @@ class QemuController:
 
     def reset(self) -> None:
         ...
+
+    def freeze(self):
+        if self.status != QemuStatus.STARTED:
+            raise Exception("Qemu has not yet started")
+
+        try:
+            self._send_command_to_qemu_monitor("/tmp/qemu.sock", "stop")
+        except (RuntimeError, TimeoutError) as e:
+            raise RuntimeError("Failed to freeze vm") from e
+        
+    
+    def resume(self):
+        if self.status != QemuStatus.STARTED:
+            raise Exception("Qemu has not yet started")
+
+        try:
+            self._send_command_to_qemu_monitor("/tmp/qemu.sock", "cont")
+        except (RuntimeError, TimeoutError) as e:
+            raise RuntimeError("Failed to resume vm") from e
     
     def run_command(self):
         ...
     
-    def get_status(self):
-        ...
-
+    def get_status(self) -> dict[str, str]:
+        result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "%cpu=,mem=,pid=", ""], capture_output=True, text=True)
+        cpu_usage, memory_usage, pid = result.stdout.strip().split(" ")
+        print(cpu_usage, memory_usage, pid)
+        return {
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage,
+            "pid": pid
+        }
 
     def create_snapshot(self):
-        proc_qemu = self._start_qemu_with_monitor()
+        proc_qemu = self._start_qemu_no_loadvm()
         try:
             # This only checks monitor socket and it gets ready
             # before the vm has fully booted up
@@ -106,9 +135,9 @@ class QemuController:
             # By checking for ssh, we ensure that alpine linux
             # is completely booted before savevm
             self.wait_for_ssh_connection()
-            self._save_vm()
+            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"savevm {self.snapshot_name}")
         finally:
-            clean_proccess(proc=proc_qemu)
+            clean_process(proc=proc_qemu)
         
     def _get_qemu_cmd(self, loadvm: bool = False) -> list[str]:
         """
@@ -128,6 +157,7 @@ class QemuController:
             "-hda", str(self.img_path),
             "-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
             "-device", "virtio-net,netdev=net0",
+            "-monitor", "unix:/tmp/qemu.sock,server,nowait",
             "-nographic"
         ]
 
@@ -138,12 +168,8 @@ class QemuController:
 
         return cmd 
     
-    def _start_qemu_with_monitor(self) -> subprocess.Popen[str]:
+    def _start_qemu_no_loadvm(self) -> subprocess.Popen[str]:
         qemu_cmd = self._get_qemu_cmd()
-        qemu_cmd.extend(["-monitor", f"unix:/tmp/qemu.sock,server,nowait"])
-
-        if os.path.exists("/tmp/qemu.sock"):
-            os.remove("/tmp/qemu.sock")
 
         try:
             proc_qemu = subprocess.Popen(
@@ -167,42 +193,44 @@ class QemuController:
             return
 
         try:
-            # Try to get the stderr from qemu to give a more detailed
-            # error message
             _, qemu_stderr = proc_qemu.communicate(timeout=5) 
-
         except subprocess.TimeoutExpired:
-            # fallback if we cant get the stderr
             qemu_stderr = "Timeout reading Qemu stderr"
         finally: 
-            clean_proccess(proc_qemu)
+            clean_process(proc_qemu)
 
         raise RuntimeError(f"Qemu monitor socket failed to start in time. \nQemu stderr: {qemu_stderr}")
 
-    def _save_vm(self):
+    def _send_command_to_qemu_monitor(self, file_socket: str, command: str, return_stdout: bool = False) -> Optional[str]:
         """ 
-        Sends a savevm command to the qemu monitor socket by connecting to it using
-        socat.
+        Sends a qemu command to the qemu monitor socket by connecting to it using
+        socat. If return_stdout = True, it returns the stdout of the process.
         """
 
-        proc = subprocess.Popen(
-            ["socat", "-", "unix-connect:/tmp/qemu.sock"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        try:
+            proc = subprocess.Popen(
+                ["socat", "-", f"unix-connect:{file_socket}"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True)
+        except FileNotFoundError:
+            raise RuntimeError("socat command not found. Is socat installed?")
+        except OSError as e:
+            raise RuntimeError("Failed to start socat") from e
 
         try:
-            # sending the savevm command
-            _, stderr = proc.communicate(input=f"savevm {self.snapshot_name}\n", timeout=10)
-        
+            stdout, stderr = proc.communicate(input=f"{command}\n", timeout=10)
         except subprocess.TimeoutExpired:
-            # happens if for some reason socat cant send the command until timeout
-            raise TimeoutError("socat timed out while sending savevm command")
-        
+            raise TimeoutError("socat timed out while sending command")
         finally:
-            clean_proccess(proc=proc)
+            clean_process(proc=proc)
         
-        # the process when wrong if its not 0
         if proc.returncode != 0:
-            raise RuntimeError(f"socat exited with error: \n{stderr}")
+            raise RuntimeError(f"socat exited with error: {stderr.strip()}")
+        
+        if return_stdout:
+            return stdout.strip()
         
     def wait_for_ssh_connection(self, port:int=2222, user:str="root", timeout:int=60) -> bool:
         """
