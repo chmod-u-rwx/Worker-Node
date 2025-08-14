@@ -8,6 +8,8 @@ from enum import Enum
 from typing import Optional
 
 from ..helpers.process import clean_process
+from ..models.qemu_load import QemuLoad
+from ..helpers.process import clean_process
 from ..helpers.socket import wait_for_file_socket_availability
 from ..config import BASE_IMG_FILE
 
@@ -115,15 +117,28 @@ class QemuController:
     def run_command(self):
         ...
     
-    def get_status(self) -> dict[str, str]:
-        result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "%cpu=,mem=,pid=", ""], capture_output=True, text=True)
+    def get_resource_load(self) -> QemuLoad:
+        if self.status != QemuStatus.STARTED:
+            raise Exception("Qemu has not yet started")
+
+        try:
+            result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "pcpu=,rss=,pid="],
+                                    capture_output=True,
+                                    text=True,
+                                    check=True)
+        except FileNotFoundError:
+            raise RuntimeError("ps command not found. Not installed?")
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"ps failed: {e.stderr.strip()}")
+
         cpu_usage, memory_usage, pid = result.stdout.strip().split(" ")
-        print(cpu_usage, memory_usage, pid)
-        return {
-            "cpu_usage": cpu_usage,
-            "memory_usage": memory_usage,
-            "pid": pid
-        }
+        return QemuLoad(
+            # %cpu returns the usage summed across all cores, so we have to divide it
+            # by the cpu_count normalizes it relative to the allocated cpu_count
+            cpu_usage=(float(cpu_usage)/self.cpu_count),
+            memory_usage=float(memory_usage), # this is in KB
+            pid=int(pid)
+        )
 
     def create_snapshot(self):
         proc_qemu = self._start_qemu_no_loadvm()

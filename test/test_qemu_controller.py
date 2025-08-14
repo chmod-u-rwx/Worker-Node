@@ -250,3 +250,30 @@ def test_freeze_resume_failure_case(test_img: Path):
 
     with pytest.raises(RuntimeError, match="Failed to resume vm"):
         qemu.resume()
+
+@patch("subprocess.run")
+def test_get_resource_load_ps_not_found(mock_run: MagicMock):
+    mock_run.side_effect = FileNotFoundError
+    qemu = QemuController.__new__(QemuController)
+    qemu.status = QemuStatus.STARTED
+    qemu.proc = MagicMock()
+
+    with pytest.raises(RuntimeError, match="ps command not found. Not installed?"):
+        qemu.get_resource_load()
+
+def test_get_resource_load_qemu_not_started():
+    qemu = QemuController.__new__(QemuController)
+    qemu.status = QemuStatus.STOPPED
+
+    with pytest.raises(Exception, match="Qemu has not yet started"):
+        qemu.get_resource_load()
+
+@patch("subprocess.run")
+def test_get_resource_load_error_occured(mock_run: MagicMock):
+    mock_run.side_effect = subprocess.CalledProcessError(1, "ps", stderr="Some error")
+    qemu = QemuController.__new__(QemuController)
+    qemu.status = QemuStatus.STARTED
+    qemu.proc = MagicMock()
+
+    with pytest.raises(RuntimeError, match="ps failed: Some error"):
+        qemu.get_resource_load()
