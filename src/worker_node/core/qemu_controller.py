@@ -4,9 +4,11 @@ import time
 import subprocess
 from pathlib import Path
 from enum import Enum
+from typing import List
 from ..helpers.process import clean_proccess
 from ..helpers.socket import wait_for_file_socket_availability
 from ..config import BASE_IMG_FILE
+from ..models.vm_output import VMOutput
 import paramiko
 
 class QemuStatus(Enum):
@@ -59,13 +61,9 @@ class QemuController:
             self.status = QemuStatus.STARTED
             print(f"VM booted in {self.boot_time:.2f} ms.")
 
-            self.status = QemuStatus.STARTED
         except FileNotFoundError:
             self.status = QemuStatus.STOPPED
             raise RuntimeError("QEMU img not found. Ensure that PATH to img is correct.")
-        except subprocess.CalledProcessError as e:
-            self.status = QemuStatus.STOPPED
-            raise RuntimeError(f"QEMU exited with an error code {e.returncode}. Command: {' '.join(command)}")
         except Exception as e:
             self.status = QemuStatus.STOPPED
             raise RuntimeError(f"An unexpected error occurred: {str(e)}")
@@ -90,38 +88,49 @@ class QemuController:
     def reset(self) -> None:
         ...
     
-    def run_command(self, file_name: str, type:str) -> str:
+    def run_command(self, command:List[str], timeout:int = 30) -> VMOutput:
         start_time = time.perf_counter()
         if self.status != QemuStatus.STARTED:
             raise RuntimeError("QEMU is not STARTED. Cannot run command.")
         
-        try:
-            self.status = QemuStatus.RUNNING
-            cmd = f"python3 {file_name} {type}"
-
-            if (not self.wait_for_ssh_connection()):
-                raise ConnectionError("SSH test connection failed. QEMU is not ready for command execution.")
-            
-            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.ssh.connect("localhost", port=2222, username="root", password="root", timeout=1)
-
-            stdin, stdout, stderr = self.ssh.exec_command(cmd) #type:ignore
-            returncode = stdout.channel.recv_exit_status()
-
-            if returncode != 0:
-                return f"Error: {stderr.read().decode("utf-8")}"
-            
-            elapsed_time = (time.perf_counter() - start_time) * 1000
-            print(f"Command executed in {elapsed_time:.2f} ms.")
-            return f"Output: {stdout.read().decode("utf-8")}"
+        if (not self.wait_for_ssh_connection()):
+            raise ConnectionError("SSH test connection failed. QEMU is not ready for command execution.")
         
-        except paramiko.SSHException as e:
-            raise RuntimeError(f"SSH connection error: {str(e)}")
-        except Exception as e:
-            raise RuntimeError(f"An error occurred while running the command: {str(e)}")
-        finally:
-            self.status = QemuStatus.STARTED
-            self.ssh.close()
+        self.status = QemuStatus.RUNNING
+        cmd = " ".join(command)
+        error_buffer = ""
+
+        while (time.perf_counter() - start_time) < timeout:
+            try:
+                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                self.ssh.connect("localhost", port=2222, username="root", password="root", timeout=1)
+
+                _, stdout, stderr = self.ssh.exec_command(cmd)
+                returncode = stdout.channel.recv_exit_status()
+
+                output = VMOutput(
+                    stdin=cmd,
+                    stdout=stdout.read().decode("utf-8"),
+                    stderr=stderr.read().decode("utf-8"),
+                    returncode=returncode,
+                    runtime=f"{(time.perf_counter() - start_time) * 1000:.2f} ms"
+                )                    
+                return output
+
+            except RuntimeError as e:
+                error_buffer = f"Runtime error: {str(e)}\n"
+                time.sleep(1)
+            except paramiko.SSHException as e:
+                error_buffer = f"SSH error: {str(e)}\n"
+                time.sleep(1)
+            except Exception as e:
+                error_buffer = f"Unexpected error: {str(e)}\n"
+                time.sleep(1)
+            finally:
+                self.status = QemuStatus.STARTED
+                self.ssh.close()
+
+        raise TimeoutError(f"Command execution timed out after {timeout} seconds. Last known error: {error_buffer}")
 
     
     def get_status(self):
@@ -236,12 +245,14 @@ class QemuController:
         if proc.returncode != 0:
             raise RuntimeError(f"socat exited with error: \n{stderr}")
         
-    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> bool:
+    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=30) -> bool:
         """
         Poll SSH on localhost:port until authentication succeeds,
         meaning the server is ready for communication.
         """
-
+        # if self.status != QemuStatus.STARTED:
+        #     raise RuntimeError("QEMU is not STARTED. Cannot wait for SSH connection.")
+        
         start_time = time.perf_counter()
         while (time.perf_counter() - start_time) < timeout:
             try:

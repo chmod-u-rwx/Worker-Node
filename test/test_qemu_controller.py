@@ -90,18 +90,17 @@ def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
 cpu_count = 2
 memory_allocated = 512
 
-def test_qemu_initialization(test_img: Path):
-    qemu = QemuController(
-        test_img,
-		"linux",
-        cpu_count,
-        memory_allocated
-    )
+def test_qemu_initialization_mocked(test_img:Path):
+    cpu_count = 2
+    memory_allocated = 500
+
+    with patch.object(Path, "exists", return_value=True):
+        qemu = QemuController(test_img, "linux", cpu_count, memory_allocated)
+
     assert qemu.img_path == test_img
     assert qemu.cpu_count == cpu_count
     assert qemu.memory_allocated == memory_allocated
     assert qemu.status == QemuStatus.STOPPED
-    os.remove(test_img)
 
 def test_qemu_start(test_img: Path):
     qemu = QemuController(test_img, "linux", 2, 500)
@@ -120,33 +119,92 @@ def test_qemu_start(test_img: Path):
         if qemu.status == QemuStatus.STARTED:
             qemu.stop()
 
-def test_qemu_stop(test_img: Path):
-    qemu = QemuController(
-        Path("./alpine.qcow2"),
-		"linux",
-        cpu_count,
-        memory_allocated
-    )
-    try:
+def test_start_already_started(test_img: Path):    
+    qemu = QemuController(test_img, "linux", 2, 512)
+    qemu.status = QemuStatus.STARTED
+
+    with pytest.raises(RuntimeError, match="QEMU is already running"):
+        qemu.start()
+
+def test_start_command_fails(test_img: Path):
+
+    qemu = QemuController(test_img, "linux", 2, 512)
+
+    with patch("subprocess.Popen") as mock_popen:
+        process_mock = MagicMock()
+        process_mock.poll.return_value = 1
+        process_mock.returncode = 1
+        mock_popen.return_value = process_mock
+
+        with pytest.raises(RuntimeError, match="Failed to start QEMU process"):
+            qemu.start()
+
+def test_start_ssh_timeout(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 512)
+
+    with patch("subprocess.Popen") as mock_popen, \
+         patch.object(QemuController, "wait_for_ssh_connection", return_value=False):
+
+        process_mock = MagicMock()
+        process_mock.poll.return_value = None
+        mock_popen.return_value = process_mock
+
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
-        assert qemu.wait_for_ssh_connection(), "SSH connection failed after starting QEMU"
-    finally:
+
+
+def test_qemu_stop(test_img: Path):
+    with patch.object(QemuController, 'wait_for_ssh_connection', return_value=True):
+        qemu = QemuController(test_img, "linux", 2, 500)
+        qemu.start()
+        assert qemu.status == QemuStatus.STARTED
+        
         qemu.stop()
         assert qemu.status == QemuStatus.STOPPED
-        proc_check = subprocess.run(
-            ["pgrep", "-f", "qemu-system-x86_64"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        assert proc_check.returncode is not None, "QEMU process did not stop properly"
-        # Double check that stopping again raises an error
-        try:
+
+def test_qemu_stop_before_start(test_img: Path):
+    with patch.object(QemuController, "wait_for_ssh_connection", return_value=True):
+        qemu = QemuController(test_img, "linux", 2, 500)
+        with pytest.raises(RuntimeError, match="QEMU is not STARTED"):
             qemu.stop()
-            assert False, "Expected RuntimeError not raised when stopping already stopped QEMU"
-        except RuntimeError as e:
-            assert "No QEMU process to stop" in str(e) or isinstance(e, RuntimeError)
+
+        qemu.status = QemuStatus.STARTED
+        qemu.proc = MagicMock()
+
+        qemu.stop()
+        assert qemu.status == QemuStatus.STOPPED
+        qemu.proc.terminate.assert_called_once()
+
+def test_wait_for_ssh_connection_success(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 512)
+    qemu.ssh = MagicMock()
+
+    # simulate successful connection on first try
+    qemu.ssh.connect.return_value = None
+
+    assert qemu.wait_for_ssh_connection(timeout=1) is True
+    qemu.ssh.connect.assert_called_once_with(
+        "localhost", port=2222, username="root", password="root", timeout=1
+    )
+
+def test_wait_for_ssh_connection_timeout(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 512)
+    qemu.ssh = MagicMock()
+
+    qemu.ssh.connect.side_effect = paramiko.SSHException("Unable to connect")
+
+    with pytest.raises(TimeoutError, match="SSH authentication failed"):
+        qemu.wait_for_ssh_connection(timeout=1)
+
+def test_wait_for_ssh_connection_eventual_success(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 512)
+    qemu.ssh = MagicMock()
+
+    qemu.ssh.connect.side_effect = [paramiko.SSHException("Fail 1"), None]
+
+    assert qemu.wait_for_ssh_connection(timeout=2) is True
+    assert qemu.ssh.connect.call_count == 2
+
 
 def test_qemu_missing_image(test_img: Path):
     with patch.object(QemuController, "__init__", return_value=None):
@@ -162,6 +220,7 @@ def test_qemu_missing_image(test_img: Path):
             no_image.start()
             assert False, "Expected RuntimeError not raised for missing image"
 
+# ======================================================================== EDIT FILE PATH
 def test_qemu_command_error(test_img: Path):
     cmd_error = QemuController(
         test_img,
@@ -172,6 +231,7 @@ def test_qemu_command_error(test_img: Path):
     with pytest.raises(RuntimeError, match="Failed to start QEMU process due to an error in the command"):
         cmd_error.img_path = Path("/home/dan/Projects/qemu-node/alpine-stndrd/alpine-standard-3.22.1-x86_64.iso")
         cmd_error.start()
+# ======================================================================== EDIT FILE PATH
 
 def test_qemu_boot_time(test_img: Path):
     qemu = QemuController(
@@ -205,12 +265,63 @@ def test_run_command_in_vm(test_img: Path):
         sftp = qemu.ssh.open_sftp()
         assert sftp.put(str(test_file_path), path_in_vm), "Failed to transfer test file to VM"
         sftp.close()
+        qemu.ssh.close()
 
-        assert qemu.run_command(path_in_vm, "stdout"), "Command execution in VM failed for stdout"
-        assert qemu.run_command(path_in_vm, "stderr"), "Command execution in VM failed for stderr"
+        assert qemu.run_command(["test_in_vm", "stdout"]), "Command execution in VM failed for stdout"
+        assert qemu.run_command(["test_in_vm", "stderr"]), "Command execution in VM failed for stderr"
 
 
     finally:
         if qemu.status == QemuStatus.STARTED:
-            qemu.ssh.close()
             qemu.stop()
+    os.remove(test_img)
+
+def test_run_command_fails_ssh_connection(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 500)
+    qemu.status = QemuStatus.STARTED
+
+    with patch.object(qemu, "wait_for_ssh_connection", return_value=True), \
+        patch.object(qemu.ssh, "connect", side_effect=paramiko.SSHException("Unable to connect")):
+        with pytest.raises(TimeoutError, match="SSH error"):
+            qemu.run_command(["ls", ""],timeout=1)
+    
+    os.remove(test_img)
+
+def test_run_command_exec_times_out(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 500)
+    qemu.status = QemuStatus.STARTED
+
+    with patch.object(qemu.ssh, "connect", return_value=None), \
+         patch.object(qemu.ssh, "exec_command", side_effect=Exception("Exec failed")):
+        with pytest.raises(TimeoutError, match="Command execution timed out"):
+            qemu.run_command(["ls", ""],timeout=1)
+    
+    os.remove(test_img)
+
+def test_run_command_non_zero_return_code(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 500)
+    qemu.status = QemuStatus.STARTED
+
+    fake_stdout = MagicMock()
+    fake_stdout.read.return_value = b"some error output"
+    fake_stdout.channel.recv_exit_status.return_value = 1
+
+    fake_stderr = MagicMock()
+    fake_stderr.read.return_value = b"error details"
+
+    with patch.object(qemu.ssh, "connect", return_value=None), \
+         patch.object(qemu.ssh, "exec_command", return_value=(None, fake_stdout, fake_stderr)):
+        output = qemu.run_command(["ls", ""])
+        assert output.returncode == 1
+        assert "some error output" in output.stdout
+    
+    os.remove(test_img)
+
+def test_run_command_qemu_not_started(test_img: Path):
+    qemu = QemuController(test_img, "linux", 2, 500)
+    qemu.status = QemuStatus.STOPPED
+
+    with pytest.raises(RuntimeError, match="QEMU is not STARTED. Cannot run command."):
+        qemu.run_command(["ls", ""])
+    
+    os.remove(test_img)
