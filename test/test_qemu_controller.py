@@ -1,5 +1,6 @@
 
 import os
+import time
 import pytest
 import subprocess
 from pathlib import Path
@@ -7,9 +8,12 @@ import paramiko
 from unittest.mock import patch, MagicMock
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 
+cpu_count = 2
+memory_allocated = 500
+virtualization = "macos"
 
 def test_create_snapshot(test_img: Path):
-    QemuController(test_img, "linux", 2, 500)
+    QemuController(test_img, virtualization, cpu_count, memory_allocated)
     qemu_img_output = subprocess.check_output(
         ["qemu-img", "info", str(test_img)],
         text=True
@@ -28,7 +32,7 @@ def test_qemu_binary_not_found(mock_popen: MagicMock, mock_exists: MagicMock, te
     mock_popen.side_effect = FileNotFoundError
 
     with pytest.raises(RuntimeError, match="Qemu binary not found. Not installed?"):
-        QemuController(test_img, "linux", cpu_count=2, memory_allocated=400)
+        QemuController(test_img, virtualization, cpu_count, memory_allocated)
 
     os.remove(test_img)
 
@@ -47,36 +51,60 @@ def test_create_snapshot_qemu_monitor_socket_not_ready(mock_wait_for_file_socket
     mock_popen.return_value = proc_mock
 
     proc_mock.communicate.return_value = ("", "some error")
-
     with pytest.raises(RuntimeError) as e:
-        qemu = QemuController(test_img, "linux", 4, 400)
+        qemu = QemuController(test_img, virtualization, cpu_count, memory_allocated)
         qemu._wait_qemu_monitor_socket(proc_mock) # type: ignore
 
     assert "Qemu monitor socket failed to start in time" in str(e)
     os.remove(test_img)
 
-
-@patch("os.path.exists")
 @patch("subprocess.Popen")
-def test_socat_timeout_while_sending_savevm_cmd(mock_popen: MagicMock, mock_exists: MagicMock, test_img: Path):
-    mock_exists.return_value = True
+def test_send_command_to_qemu_monitor(mock_popen: MagicMock):
+    qemu = QemuController.__new__(QemuController) # gives an empty instance of QemuController that doesnt run __init__
+    proc_mock = MagicMock() 
+    proc_mock.communicate.return_value = ("Stdout is okayy", "No stderr")
+    proc_mock.returncode = 0
+    mock_popen.return_value = proc_mock
+    stdout = qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "some random command", return_stdout=True) # type: ignore
 
-    proc_socat_mock = MagicMock()
-    proc_socat_mock.communicate.side_effect = subprocess.TimeoutExpired(cmd="socat", timeout=10)
-    mock_popen.return_value = proc_socat_mock
+    mock_popen.assert_called_once()
+    assert stdout == "Stdout is okayy"
 
-    with patch.object(QemuController, "create_snapshot", return_value=None) as mock_create_snapshot:
-        qemu = QemuController(test_img, "linux", 2, 200)
+@patch("subprocess.Popen")
+def test_send_command_to_qemu_monitor_socat_not_found(mock_popen: MagicMock, test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    mock_popen.side_effect = FileNotFoundError()
 
-        with pytest.raises(TimeoutError) as e:
-            qemu._save_vm()  # type: ignore
+    with pytest.raises(RuntimeError, match="socat command not found. Is socat installed?"):
+        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
-        assert "socat timed out while sending savevm command" in str(e.value)
-        mock_create_snapshot.assert_called_once()
-        mock_popen.assert_called_once()
-        assert "socat" in " ".join(mock_popen.call_args[0][0])
+@patch("subprocess.Popen")
+def test_send_command_to_qemu_monitor_failed_to_start_socat(mock_popen: MagicMock, test_img: Path):
+    mock_popen.side_effect = OSError("Some os error")
+    qemu = QemuController.__new__(QemuController)
 
-    os.remove(test_img)
+    with pytest.raises(RuntimeError, match="Failed to start socat"):
+        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
+
+@patch("subprocess.Popen")
+def test_send_command_to_qemu_monitor_socat_timeout(mock_open: MagicMock, test_img: Path):
+    proc_mock = MagicMock()
+    proc_mock.communicate.side_effect = subprocess.TimeoutExpired("socat", 10)
+    mock_open.return_value = proc_mock
+    qemu = QemuController.__new__(QemuController)
+    
+    with pytest.raises(TimeoutError, match="socat timed out while sending command"):
+        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
+
+@patch("subprocess.Popen")
+def test_send_command_to_qemu_monitor_socat_exited_with_error(mock_open: MagicMock):
+    proc_mock = MagicMock()
+    mock_open.return_value = proc_mock
+    qemu = QemuController.__new__(QemuController) 
+    proc_mock.communicate.return_value = ("stdout", "Some error")
+
+    with pytest.raises(RuntimeError, match="socat exited with error: Some error"):
+        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
 # tmp_path is a built in fixture by pytest that provides temproray path
 # this path gets automatically cleaned up after running the test
@@ -86,24 +114,21 @@ def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
 
 	assert "Virtualization must be 'macos' or 'linux' only" in str(err)
 
-
-cpu_count = 2
-memory_allocated = 512
-
-def test_qemu_initialization_mocked(test_img:Path):
-    cpu_count = 2
-    memory_allocated = 500
-
-    with patch.object(Path, "exists", return_value=True):
-        qemu = QemuController(test_img, "linux", cpu_count, memory_allocated)
-
+def test_qemu_initialization(test_img: Path):
+    qemu = QemuController(
+        test_img,
+		virtualization,
+        cpu_count,
+        memory_allocated
+    )
     assert qemu.img_path == test_img
     assert qemu.cpu_count == cpu_count
     assert qemu.memory_allocated == memory_allocated
     assert qemu.status == QemuStatus.STOPPED
+    os.remove(test_img)
 
 def test_qemu_start(test_img: Path):
-    qemu = QemuController(test_img, "linux", 2, 500)
+    qemu = QemuController(test_img, virtualization, 2, 500)
     try:
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
@@ -118,6 +143,7 @@ def test_qemu_start(test_img: Path):
     finally:
         if qemu.status == QemuStatus.STARTED:
             qemu.stop()
+    os.remove(test_img)
 
 def test_start_already_started(test_img: Path):    
     qemu = QemuController(test_img, "linux", 2, 512)
@@ -125,9 +151,9 @@ def test_start_already_started(test_img: Path):
 
     with pytest.raises(RuntimeError, match="QEMU is already running"):
         qemu.start()
+    os.remove(test_img)
 
 def test_start_command_fails(test_img: Path):
-
     qemu = QemuController(test_img, "linux", 2, 512)
 
     with patch("subprocess.Popen") as mock_popen:
@@ -138,6 +164,7 @@ def test_start_command_fails(test_img: Path):
 
         with pytest.raises(RuntimeError, match="Failed to start QEMU process"):
             qemu.start()
+    os.remove(test_img)
 
 @patch("src.worker_node.core.qemu_controller.subprocess.Popen")
 @patch("src.worker_node.core.qemu_controller.QemuController.create_snapshot", new=MagicMock())
@@ -153,6 +180,7 @@ def test_start_wait_for_ssh_connection_timeout(mock_popen: MagicMock, test_img: 
 
     with pytest.raises(RuntimeError, match="SSH authentication failed"):
         qemu.start()
+    os.remove(test_img)
 
 @patch("src.worker_node.core.qemu_controller.QemuController.create_snapshot", new=MagicMock())
 def test_qemu_stop(test_img: Path):
@@ -173,6 +201,7 @@ def test_qemu_stop(test_img: Path):
         mock_proc.terminate.assert_called_once()
 
         mock_proc.poll.assert_called()
+        os.remove(test_img)
 
 def test_qemu_stop_before_start(test_img: Path):
     with patch.object(QemuController, "wait_for_ssh_connection", return_value=True):
@@ -186,18 +215,19 @@ def test_qemu_stop_before_start(test_img: Path):
         qemu.stop()
         assert qemu.status == QemuStatus.STOPPED
         qemu.proc.terminate.assert_called_once()
+        os.remove(test_img)
 
 def test_wait_for_ssh_connection_success(test_img: Path):
     qemu = QemuController(test_img, "linux", 2, 512)
     qemu.ssh = MagicMock()
 
-    # simulate successful connection on first try
     qemu.ssh.connect.return_value = None
 
     assert qemu.wait_for_ssh_connection(timeout=1) is True
     qemu.ssh.connect.assert_called_once_with(
         "localhost", port=2222, username="root", password="root", timeout=1
     )
+    os.remove(test_img)
 
 def test_wait_for_ssh_connection_timeout(test_img: Path):
     qemu = QemuController(test_img, "linux", 2, 512)
@@ -222,7 +252,7 @@ def test_qemu_missing_image(test_img: Path):
     with patch.object(QemuController, "__init__", return_value=None):
         no_image = QemuController(
             Path(test_img),
-            "linux",
+            virtualization,
             cpu_count,
             memory_allocated
         )
@@ -236,7 +266,7 @@ def test_qemu_missing_image(test_img: Path):
 def test_qemu_command_error(test_img: Path):
     cmd_error = QemuController(
         test_img,
-		"linux",
+		virtualization,
         cpu_count,
         memory_allocated
     )
@@ -248,7 +278,7 @@ def test_qemu_command_error(test_img: Path):
 def test_qemu_boot_time(test_img: Path):
     qemu = QemuController(
         test_img,
-		"linux",
+		virtualization,
         cpu_count,
         memory_allocated
     )
@@ -337,3 +367,42 @@ def test_run_command_qemu_not_started(test_img: Path):
         qemu.run_command(["ls", ""])
     
     os.remove(test_img)
+
+def test_freeze_resume_vm(test_img: Path):
+    file_socket = "/tmp/qemu.sock"
+    qemu = QemuController(test_img, virtualization, cpu_count, memory_allocated)
+    qemu.start()
+    qemu.freeze()
+    assert "VM status: paused" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
+
+    time.sleep(2)
+    result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
+    cpu_usage = result.stdout.strip()
+    assert cpu_usage > "0.0"
+
+    qemu.resume()
+    assert "VM status: running" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
+
+    time.sleep(0.5)
+    result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
+    cpu_usage = result.stdout.strip()
+    assert cpu_usage != "0.0"
+
+def test_freeze_resume_failure_case(test_img: Path):
+    qemu = QemuController(test_img, virtualization, cpu_count, memory_allocated)
+
+    with pytest.raises(Exception, match="Qemu has not yet started"):
+        qemu.freeze()
+
+    with pytest.raises(Exception, match="Qemu has not yet started"):
+        qemu.resume()
+
+    qemu.start()
+    qemu._send_command_to_qemu_monitor = MagicMock() # type: ignore
+    qemu._send_command_to_qemu_monitor.side_effect = RuntimeError() # type: ignore
+    
+    with pytest.raises(RuntimeError, match="Failed to freeze vm"):
+        qemu.freeze()
+
+    with pytest.raises(RuntimeError, match="Failed to resume vm"):
+        qemu.resume()
