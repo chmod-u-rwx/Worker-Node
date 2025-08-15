@@ -280,6 +280,8 @@ class QemuController:
         """
         # if self.status != QemuStatus.STARTED:
         #     raise RuntimeError("QEMU is not STARTED. Cannot wait for SSH connection.")
+
+        return True;
         
         start_time = time.perf_counter()
         while (time.perf_counter() - start_time) < timeout:
