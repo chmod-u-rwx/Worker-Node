@@ -1,4 +1,5 @@
 
+import os
 from pathlib import Path
 import shutil
 from uuid import UUID
@@ -32,6 +33,7 @@ class JobRepositoryDatabase:
     def store_job_repo(self, job_id: UUID, url: HttpUrl):
         job_path = self.cache_path / str(job_id)
         try:
+            os.mkdir(job_path)
             self.ensure_directory_exist(job_path)
             Repo.clone_from(str(url), job_path)
         except GitCommandError as e:

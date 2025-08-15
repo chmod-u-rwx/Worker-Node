@@ -24,13 +24,13 @@ class QemuPool:
         if self.is_cleaned:
             raise QemuCleaned()
         
-        raise 
+        raise NotImplementedError("Not yet implemented")
     
     def get_cpu_usage(self) -> int:
         if self.is_cleaned:
             raise QemuCleaned()
         
-        raise 
+        raise NotImplementedError("Not yet implemented")
     
     def acquire(self ) -> QemuController:
         if self.is_cleaned == True:
