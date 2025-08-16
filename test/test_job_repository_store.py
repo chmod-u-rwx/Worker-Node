@@ -12,7 +12,7 @@ from src.worker_node.db.job_repository import JobRepositoryDatabase
 @pytest.fixture
 def job_repo_db(tmp_path: Path):
     # Use a temporary directory so we're not touching real files
-    return JobRepositoryDatabase(cache_max_size=10, cache_path=tmp_path)
+    return JobRepositoryDatabase(cache_path=tmp_path)
 
 
 def test_exists_when_directory_with_files(job_repo_db: JobRepositoryDatabase):

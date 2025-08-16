@@ -12,10 +12,20 @@ from ..config import LOCAL_JOB_REPOSITORY_CACHE_PATH
 
 class JobRepositoryDatabase:
 
-    def __init__(self, cache_max_size: int, cache_path: Path = LOCAL_JOB_REPOSITORY_CACHE_PATH) -> None:
-        self.cache_max_size = cache_max_size
+    def __init__(self, cache_path: Path = LOCAL_JOB_REPOSITORY_CACHE_PATH) -> None:
         self.cache_path = cache_path
         self.ensure_directory_exist(cache_path)
+    
+    def get_size(self, job_id: UUID) -> int:
+        job_path = self.cache_path / str(job_id)
+        total = 0
+        for root, _, files in os.walk(job_path, followlinks=False):
+            for f in files:
+                try:
+                    total += os.path.getsize(os.path.join(root, f))
+                except OSError:
+                    continue
+        return total // (1024 * 1024)
 
     def exists(self, job_id: UUID) -> bool:
         job_path = self.cache_path / str(job_id)

@@ -14,3 +14,5 @@ if path_str is None:
     raise ValueError(f"LOCAL_JOB_REPOSITORY_CACHE_PATH not set")
 
 LOCAL_JOB_REPOSITORY_CACHE_PATH = Path(path_str)
+
+BASE_API_URI = os.getenv("BASE_API_URI")
