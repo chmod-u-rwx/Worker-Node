@@ -1,7 +1,41 @@
+from pathlib import Path
+from unittest.mock import patch
 from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError, QemuCleaned
 from src.worker_node.config import MAX_MEMORY_ALLOCATED, MAX_CPU_COUNT_ALLOCATED
+from src.worker_node.core.qemu_controller import QemuStatus
 
 import pytest
+
+class MockQemu:
+    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0) -> None:
+        self.img_path = img_path 
+        self.cpu_coun = cpu_count
+        self.memory_allocated = memory_allocated
+        self.status = QemuStatus.STARTED
+
+    def start(self):
+        ...
+    
+    def stop(self):
+        ...
+
+    def reset(self) -> None:
+        ...
+    
+    def run_command(self):
+        ...
+    
+    def get_status(self):
+        ...
+    
+    def delete(self):
+        ...
+
+
+@pytest.fixture(autouse=True, scope="module")
+def patch_qemu_controller():
+    with patch("src.worker_node.core.qemu_pool.QemuController", MockQemu) :
+        yield
 
 def test_qemu_creating_new_vm_at_startup():
     pool = QemuPool()
