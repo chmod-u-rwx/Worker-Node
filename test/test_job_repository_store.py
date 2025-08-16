@@ -4,6 +4,7 @@ from uuid import uuid4
 from pathlib import Path
 from git import GitCommandError
 from pydantic import HttpUrl
+from pathlib import Path
 
 from src.worker_node.db.job_repository import JobRepositoryDatabase
 
@@ -98,3 +99,27 @@ def test_ensure_directory_exist_not_a_dir(job_repo_db: JobRepositoryDatabase):
          patch.object(Path, "is_dir", return_value=False):
         with pytest.raises(NotADirectoryError):
             job_repo_db.ensure_directory_exist(path)
+
+def test_store_and_delete_repo(job_repo_db: JobRepositoryDatabase):
+    job_id = uuid4()
+    url = HttpUrl(f"https://github.com/sarcasticadmin/empty-repo.git")
+    
+    job_repo_db.store_job_repo(job_id, url)
+    assert job_repo_db.exists(job_id)
+
+    job_repo_db.delete(job_id)
+    assert not job_repo_db.exists(job_id)
+
+def test_exists_with_corruption(job_repo_db: JobRepositoryDatabase):
+    job_id = uuid4()
+    bad_path = job_repo_db.cache_path / str(job_id)
+    
+    bad_path.write_text("not a dir")
+    with pytest.raises(NotADirectoryError):
+        job_repo_db.exists(job_id)
+    
+    # Empty dir
+    bad_path.unlink()
+    bad_path.mkdir()
+    with pytest.raises(ValueError):
+        job_repo_db.exists(job_id)

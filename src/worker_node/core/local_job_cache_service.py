@@ -5,7 +5,7 @@ from ..models.job import Job
 
 class LocalJobCacheService:
 
-    def cache_job(self) -> Job:
+    def cache_job(self, job: Job):
         ...
     
     def is_job_cached(self, job_id: UUID) -> bool:
