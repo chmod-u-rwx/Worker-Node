@@ -106,15 +106,6 @@ def test_send_command_to_qemu_monitor_socat_exited_with_error(mock_open: MagicMo
     with pytest.raises(RuntimeError, match="socat exited with error: Some error"):
         qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
-# tmp_path is a built in fixture by pytest that provides temproray path
-# this path gets automatically cleaned up after running the test
-def test_get_qemu_cmd_invalid_virtualization(tmp_path: Path):
-    with patch("src.worker_node.core.qemu_controller.VIRTUALIZATION", "ms-dos"):
-        with pytest.raises(ValueError) as err:
-            QemuController(tmp_path, 4, 400)
-
-    assert "Unsupported host system: ms-dos" in str(err.value)
-
 def test_qemu_initialization(test_img: Path):
     qemu = QemuController(
         test_img,

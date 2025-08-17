@@ -25,13 +25,6 @@ class QemuController:
         if not os.path.exists(BASE_IMG_FILE):
             raise FileNotFoundError("Base img does not exist")
         
-        if VIRTUALIZATION == "darwin":
-            self.virtualization = "macos"
-        elif VIRTUALIZATION == "linux":
-            self.virtualization = "linux"
-        else:
-            raise ValueError(f"Unsupported host system: {VIRTUALIZATION}") 
-        
         self.img_path = img_path 
         self.cpu_count = cpu_count
         self.snapshot_name = "base"
@@ -200,8 +193,8 @@ class QemuController:
         Loads self.snapshot if loadvm = True
         """
         
-        accel = "tcg" if self.virtualization == "macos" else "kvm:tcg,usb=off"
-        cpu = "max" if self.virtualization == "macos" else "host"
+        accel = "tcg" if VIRTUALIZATION == "darwin" else "kvm:tcg,usb=off"
+        cpu = "max" if VIRTUALIZATION == "darwin" else "host"
 
         cmd = [
             "qemu-system-x86_64",
@@ -216,7 +209,7 @@ class QemuController:
             "-nographic"
         ]
 
-        if self.virtualization == "linux":
+        if VIRTUALIZATION == "linux":
             cmd.append("-enable-kvm")
         if loadvm:
             cmd.extend(["-loadvm", self.snapshot_name])
