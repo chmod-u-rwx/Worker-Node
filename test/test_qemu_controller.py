@@ -305,3 +305,15 @@ def test_get_resource_load_error_occured(mock_run: MagicMock):
 
     with pytest.raises(RuntimeError, match="ps failed: Some error"):
         qemu.get_resource_load()
+
+def test_rest_vm_unexpected_error():
+    qemu = QemuController.__new__(QemuController)
+    qemu.status = QemuStatus.STARTED
+
+    with patch.object(qemu, "freeze", side_effect=RuntimeError("Failed to freeze vm")):
+        with pytest.raises(RuntimeError) as e:
+            qemu.reset()
+
+            assert "Failed to reset vm" in str(e)
+
+

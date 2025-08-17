@@ -93,7 +93,15 @@ class QemuController:
             raise RuntimeError("No QEMU process found")
 
     def reset(self) -> None:
-        ...
+        if self.status != QemuStatus.STARTED:
+            raise Exception("Qemu has not yet started")
+        
+        try:
+            self.freeze()
+            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"loadvm {self.snapshot_name}")
+            self.resume()
+        except Exception:
+            raise RuntimeError("Failed to reset vm. An unexpected error occured: {e}")
 
     def freeze(self):
         if self.status != QemuStatus.STARTED:
