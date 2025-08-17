@@ -283,7 +283,7 @@ class QemuController:
         if return_stdout:
             return stdout.strip()
         
-    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> bool:
+    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> None:
         """
         Poll SSH on localhost:port until authentication succeeds,
         meaning the server is ready for communication.
@@ -297,7 +297,7 @@ class QemuController:
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.ssh.connect("localhost", port=port, username=user, password=password, timeout=1)
                 self.ssh.close()
-                return True
+                return
             except Exception:
                 time.sleep(0.05)
 
