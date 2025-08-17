@@ -8,6 +8,8 @@ from typing import List
 from typing import Optional
 
 from ..helpers.process import clean_process
+from ..models.qemu_load import QemuLoad
+from ..helpers.process import clean_process
 from ..helpers.socket import wait_for_file_socket_availability
 from ..config import BASE_IMG_FILE
 from ..models.vm_output import VMOutput
@@ -91,7 +93,15 @@ class QemuController:
             raise RuntimeError("No QEMU process found")
 
     def reset(self) -> None:
-        ...
+        if self.status != QemuStatus.STARTED:
+            raise Exception("Qemu has not yet started")
+        
+        try:
+            self.freeze()
+            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"loadvm {self.snapshot_name}")
+            self.resume()
+        except Exception:
+            raise RuntimeError("Failed to reset vm. An unexpected error occured: {e}")
 
     def freeze(self):
         if self.status != QemuStatus.STARTED:
@@ -156,16 +166,6 @@ class QemuController:
         raise TimeoutError(f"Command execution timed out after {timeout} seconds. Last known error: {error_buffer}")
 
     
-    def get_status(self) -> dict[str, str]:
-        result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "%cpu=,mem=,pid=", ""], capture_output=True, text=True)
-        cpu_usage, memory_usage, pid = result.stdout.strip().split(" ")
-        print(cpu_usage, memory_usage, pid)
-        return {
-            "cpu_usage": cpu_usage,
-            "memory_usage": memory_usage,
-            "pid": pid
-        }
-
     def create_snapshot(self):
         proc_qemu = self._start_qemu_no_loadvm()
         try:
@@ -179,7 +179,30 @@ class QemuController:
             self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"savevm {self.snapshot_name}")
         finally:
             clean_process(proc=proc_qemu)
-        
+
+    def get_resource_load(self) -> QemuLoad:
+        if self.status != QemuStatus.STARTED:
+            raise Exception("Qemu has not yet started")
+
+        try:
+            result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "pcpu=,rss=,pid="],
+                                    capture_output=True,
+                                    text=True,
+                                    check=True)
+        except FileNotFoundError:
+            raise RuntimeError("ps command not found. Not installed?")
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"ps failed: {e.stderr.strip()}")
+
+        cpu_usage, memory_usage, pid = result.stdout.strip().split(" ")
+        return QemuLoad(
+            # %cpu returns the usage summed across all cores, so we have to divide it
+            # by the cpu_count normalizes it relative to the allocated cpu_count
+            cpu_usage= float(cpu_usage) / self.cpu_count,      # in percentage
+            memory_usage= float(memory_usage) // 1024.0,       # this is in MB
+            pid= int(pid)
+        )    
+
     def _get_qemu_cmd(self, loadvm: bool = False) -> list[str]:
         """
         Returns the proper qemu command based on virtualization.
@@ -211,6 +234,9 @@ class QemuController:
     
     def _start_qemu_no_loadvm(self) -> subprocess.Popen[str]:
         qemu_cmd = self._get_qemu_cmd()
+
+        if os.path.exists("/tmp/qemu.sock"):
+            os.remove("/tmp/qemu.sock")
 
         try:
             proc_qemu = subprocess.Popen(
