@@ -11,7 +11,7 @@ from ..helpers.process import clean_process
 from ..models.qemu_load import QemuLoad
 from ..helpers.process import clean_process
 from ..helpers.socket import wait_for_file_socket_availability
-from ..config import BASE_IMG_FILE
+from ..config import BASE_IMG_FILE, VIRTUALIZATION
 from ..models.vm_output import VMOutput
 import paramiko
 
@@ -21,15 +21,10 @@ class QemuStatus(Enum):
     RUNNING = 3
 
 class QemuController:
-    def __init__(self, img_path: Path, virtualization: str, cpu_count: int = 1, memory_allocated: int = 0, ) -> None:
+    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, ) -> None:
         if not os.path.exists(BASE_IMG_FILE):
             raise FileNotFoundError("Base img does not exist")
-
-        virtualization = virtualization.lower() 
-        if virtualization not in ["macos", "linux"]:
-            raise ValueError("Virtualization must be 'macos' or 'linux' only") 
         
-        self.virtualization = virtualization
         self.img_path = img_path 
         self.cpu_count = cpu_count
         self.snapshot_name = "base"
@@ -80,12 +75,7 @@ class QemuController:
             raise RuntimeError("QEMU is not STARTED")
 
         if self.proc:
-            self.proc.terminate()
-            try:
-                self.proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.proc.kill()  # force kill if still alive
-                self.proc.wait()
+            clean_process(self.proc)
 
             self.status = QemuStatus.STOPPED
             print("VM stopped successfully.")
@@ -100,8 +90,8 @@ class QemuController:
             self.freeze()
             self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"loadvm {self.snapshot_name}")
             self.resume()
-        except Exception:
-            raise RuntimeError("Failed to reset vm. An unexpected error occured: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to reset vm. An unexpected error occured: {e}")
 
     def freeze(self):
         if self.status != QemuStatus.STARTED:
@@ -112,7 +102,6 @@ class QemuController:
         except (RuntimeError, TimeoutError) as e:
             raise RuntimeError("Failed to freeze vm") from e
         
-    
     def resume(self):
         if self.status != QemuStatus.STARTED:
             raise Exception("Qemu has not yet started")
@@ -147,7 +136,8 @@ class QemuController:
                     stderr=stderr.read().decode("utf-8"),
                     returncode=returncode,
                     runtime=f"{(time.perf_counter() - start_time) * 1000:.2f} ms"
-                )                    
+                )        
+                self.status = QemuStatus.STARTED
                 return output
 
             except RuntimeError as e:
@@ -160,21 +150,15 @@ class QemuController:
                 error_buffer = f"Unexpected error: {str(e)}\n"
                 time.sleep(1)
             finally:
-                self.status = QemuStatus.STARTED
                 self.ssh.close()
 
+        self.status = QemuStatus.STARTED
         raise TimeoutError(f"Command execution timed out after {timeout} seconds. Last known error: {error_buffer}")
 
-    
     def create_snapshot(self):
         proc_qemu = self._start_qemu_no_loadvm()
         try:
-            # This only checks monitor socket and it gets ready
-            # before the vm has fully booted up
             self._wait_qemu_monitor_socket(proc_qemu)
-            
-            # By checking for ssh, we ensure that alpine linux
-            # is completely booted before savevm
             self.wait_for_ssh_connection()
             self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"savevm {self.snapshot_name}")
         finally:
@@ -209,8 +193,8 @@ class QemuController:
         Loads self.snapshot if loadvm = True
         """
         
-        accel = "tcg" if self.virtualization == "macos" else "kvm:tcg,usb=off"
-        cpu = "max" if self.virtualization == "macos" else "host"
+        accel = "tcg" if VIRTUALIZATION == "darwin" else "kvm:tcg,usb=off"
+        cpu = "max" if VIRTUALIZATION == "darwin" else "host"
 
         cmd = [
             "qemu-system-x86_64",
@@ -225,7 +209,7 @@ class QemuController:
             "-nographic"
         ]
 
-        if self.virtualization == "linux":
+        if VIRTUALIZATION == "linux":
             cmd.append("-enable-kvm")
         if loadvm:
             cmd.extend(["-loadvm", self.snapshot_name])
@@ -299,7 +283,7 @@ class QemuController:
         if return_stdout:
             return stdout.strip()
         
-    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> bool:
+    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> None:
         """
         Poll SSH on localhost:port until authentication succeeds,
         meaning the server is ready for communication.
@@ -307,15 +291,13 @@ class QemuController:
         # if self.status != QemuStatus.STARTED:
         #     raise RuntimeError("QEMU is not STARTED. Cannot wait for SSH connection.")
 
-        return True;
-        
         start_time = time.perf_counter()
         while (time.perf_counter() - start_time) < timeout:
             try:
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.ssh.connect("localhost", port=port, username=user, password=password, timeout=1)
                 self.ssh.close()
-                return True
+                return
             except Exception:
                 time.sleep(0.05)
 
