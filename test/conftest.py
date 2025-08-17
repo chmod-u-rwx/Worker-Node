@@ -9,4 +9,4 @@ def test_img(tmp_path: Path) -> Generator[Path, None, None]:
 	"""
 	test_img = tmp_path / "test_img.qcow2"
 	yield test_img
-	test_img.unlink(missing_ok=True)
+	test_img.unlink(missing_ok=True)  # delete the file

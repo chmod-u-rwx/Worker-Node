@@ -199,7 +199,7 @@ class QemuController:
             # %cpu returns the usage summed across all cores, so we have to divide it
             # by the cpu_count normalizes it relative to the allocated cpu_count
             cpu_usage= float(cpu_usage) / self.cpu_count,      # in percentage
-            memory_usage= float(memory_usage) / 1024.0,        # this is in MB
+            memory_usage= float(memory_usage) // 1024.0,       # this is in MB
             pid= int(pid)
         )    
 
