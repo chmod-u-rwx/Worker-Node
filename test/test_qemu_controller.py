@@ -184,6 +184,8 @@ def test_qemu_stop(test_img: Path):
         mock_popen.return_value = mock_proc
 
         qemu = QemuController(test_img, 2, 500)
+        qemu._mount_local_job_repo_cache = MagicMock() # type: ignore
+
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
 
@@ -282,7 +284,7 @@ def test_qemu_boot_time(test_img: Path):
 
 def test_run_command_in_vm(test_img: Path):
     qemu = QemuController(test_img, 2, 500)
-
+    qemu._mount_local_job_repo_cache = MagicMock() # type: ignore
     test_file_path = Path("test/files_for_transfer/test_in_vm.py")
     path_in_vm = "/root/test_in_vm"
     try:
@@ -460,4 +462,30 @@ def test_reset_vm_unexpected_error():
 
             assert "Failed to reset vm" in str(e)
 
+def test_mount_local_job_repository_cache(tmp_path: Path, test_img: Path):
+    with patch(
+        "src.worker_node.core.qemu_controller.LOCAL_JOB_REPOSITORY_CACHE_PATH",
+        str(tmp_path) # tmp_path is in the host file system
+    ):
+        qemu = QemuController(test_img)
 
+        try:
+            qemu.start()
+            qemu.run_command(command=[f"echo 'File from vm' >> /mnt/jobcache/test.txt"])
+
+            assert os.path.exists(f"{tmp_path}/test.txt")
+        
+        finally:
+            qemu.stop()
+
+def test_failed_to_mount_local_job_repo_cache(tmp_path: Path):
+    with patch(
+        "src.worker_node.core.qemu_controller.LOCAL_JOB_REPOSITORY_CACHE_PATH",
+        str(tmp_path) # tmp_path is in the host file system
+    ):
+        qemu = QemuController.__new__(QemuController)
+        qemu.run_command = MagicMock()
+        qemu.run_command.side_effect = RuntimeError
+
+        with pytest.raises(RuntimeError, match="Failed to mount local job repository cache path in /mnt/jobcache:"):
+            qemu._mount_local_job_repo_cache() # type: ignore
