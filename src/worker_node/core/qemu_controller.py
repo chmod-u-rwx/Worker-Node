@@ -11,7 +11,7 @@ from ..helpers.process import clean_process
 from ..models.qemu_load import QemuLoad
 from ..helpers.process import clean_process
 from ..helpers.socket import wait_for_file_socket_availability
-from ..config import BASE_IMG_FILE, VIRTUALIZATION
+from ..config import BASE_IMG_FILE, VIRTUALIZATION, LOCAL_JOB_REPOSITORY_CACHE_PATH
 from ..models.vm_output import VMOutput
 import paramiko
 
@@ -61,6 +61,7 @@ class QemuController:
                 self.boot_time = (time.perf_counter() - start_time)*1000
 
             self.status = QemuStatus.STARTED
+            self._mount_local_job_repo_cache()
             print(f"VM booted in {self.boot_time:.2f} ms.")
 
         except FileNotFoundError:
@@ -206,6 +207,8 @@ class QemuController:
             "-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
             "-device", "virtio-net,netdev=net0",
             "-monitor", "unix:/tmp/qemu.sock,server,nowait",
+            "-fsdev", f"local,id=fsdev0,path={LOCAL_JOB_REPOSITORY_CACHE_PATH},security_model=none",
+            "-device", "virtio-9p-pci,fsdev=fsdev0,mount_tag=jobcache",
             "-nographic"
         ]
 
@@ -302,6 +305,13 @@ class QemuController:
                 time.sleep(0.05)
 
         raise TimeoutError("SSH authentication failed. Server not ready.")
+    
+    def _mount_local_job_repo_cache(self):
+        try:
+            self.run_command(command=["mkdir -p /mnt/jobcache"]) # this is where we mount
+            self.run_command(command=["mount -t 9p -o trans=virtio jobcache /mnt/jobcache"])
+        except Exception as e:
+            raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
     
     def delete(self):
         ...
