@@ -10,7 +10,11 @@ from unittest.mock import patch, MagicMock
 from src.worker_node.models.qemu_load import QemuLoad
 from src.worker_node.models.vm_output import VMOutput
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
+from dotenv import load_dotenv
 
+load_dotenv()
+
+ALPINE_ISO_PATH = str(os.environ["ALPINE_ISO_PATH"])
 cpu_count = 2
 memory_allocated = 500
 
@@ -257,7 +261,6 @@ def test_qemu_missing_image(test_img: Path):
             no_image.start()
             assert False, "Expected RuntimeError not raised for missing image"
 
-# ======================================================================== EDIT FILE PATH
 def test_qemu_command_error(test_img: Path):
     cmd_error = QemuController(
         test_img,
@@ -265,9 +268,8 @@ def test_qemu_command_error(test_img: Path):
         memory_allocated
     )
     with pytest.raises(RuntimeError, match="Failed to start QEMU process due to an error in the command"):
-        cmd_error.img_path = Path("/Users/luis/netes/alpine-standard-3.22.1-x86_64.iso")
+        cmd_error.img_path = Path(ALPINE_ISO_PATH)
         cmd_error.start()
-# ======================================================================== EDIT FILE PATH
 
 def test_qemu_boot_time(test_img: Path):
     qemu = QemuController(
