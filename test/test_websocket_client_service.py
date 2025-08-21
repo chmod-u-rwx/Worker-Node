@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
-from src.worker_node.services.worker_node_websocket_client_service import WebsocketClientService
+from worker_node.services.websocket_client_service import WebsocketClientService
 
 class TestWebsocketClientService:
     
