@@ -5,13 +5,13 @@ import websockets
 from websockets.exceptions import ConnectionClosed, InvalidURI, InvalidHandshake, WebSocketException
 import src.worker_node.config as config
 
-class WorkerNodeWebsocketClientService:
+class WebsocketClientService:
     def __init__(self, worker_id: UUID):
-        if not config.MASTER_NODE_API_URL:
-            raise ValueError("MASTER_NODE_API_URL not set")
+        if not config.CORE_API:
+            raise ValueError("MASTER_NODE_CORE_API not set")
         
         self.worker_id = str(worker_id)
-        self.master_node_api_url = config.MASTER_NODE_API_URL
+        self.core_api = config.CORE_API
         self.websocket_port = config.MASTER_NODE_WEBSOCKET_PORT
         self.websocket = None
         self.running = False
@@ -20,7 +20,7 @@ class WorkerNodeWebsocketClientService:
         import httpx
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(f"{self.master_node_api_url}/master-node/discover")
+                response = await client.get(f"{self.core_api}/master-node/discover")
                 response.raise_for_status()
                 master_node_data = response.json()
                 master_address = master_node_data.get("master_address")

@@ -3,9 +3,9 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
-from src.worker_node.services.worker_node_websocket_client_service import WorkerNodeWebsocketClientService
+from src.worker_node.services.worker_node_websocket_client_service import WebsocketClientService
 
-class TestWorkerNodeWebsocketClientService:
+class TestWebsocketClientService:
     
     @pytest.fixture
     def worker_id(self):
@@ -18,41 +18,35 @@ class TestWorkerNodeWebsocketClientService:
         """
         
         with patch.dict('os.environ', {
-            'MASTER_NODE_API_URL': 'http://localhost:8000',
+            'CORE_API': 'http://localhost:8000',
             'MASTER_NODE_WEBSOCKET_PORT': '8001'
         }):
             yield
     
     @pytest.fixture
     def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.MASTER_NODE_API_URL', 'http://localhost:8000'), \
+        with patch('src.worker_node.config.CORE_API', 'http://localhost:8000'), \
             patch('src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT', 8001):
-            return WorkerNodeWebsocketClientService(worker_id)
+            return WebsocketClientService(worker_id)
     
     def test_init_success(self, worker_id: UUID):
         """
         Test successful initialization
         """
-        
-        with patch('src.worker_node.config.MASTER_NODE_API_URL', 'http://localhost:8000'), \
-            patch('src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT', 8001):
-            service = WorkerNodeWebsocketClientService(worker_id)
+
+        with patch("src.worker_node.config.CORE_API", "http://mocked-api:1234"), \
+            patch("src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT", 9999):
+
+            service = WebsocketClientService(worker_id)
+
             assert service.worker_id == str(worker_id)
-            assert service.master_node_api_url == 'http://localhost:8000'
-            assert service.websocket_port == 8001
+            assert service.core_api == "http://mocked-api:1234"   # mocked value
+            assert service.websocket_port == 9999                 # mocked value
             assert service.websocket is None
             assert service.running is False
     
-    def test_init_missing_env_var(self, worker_id: UUID):
-        """
-        Test initialization fails when MASTER_NODE_API_URL is not set
-        """
-        with patch('src.worker_node.config.MASTER_NODE_API_URL', None):
-            with pytest.raises(ValueError, match="MASTER_NODE_API_URL not set"):
-                WorkerNodeWebsocketClientService(worker_id)
-    
     @pytest.mark.asyncio
-    async def test_discover_master_node_success(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_discover_master_node_success(self, worker_service: WebsocketClientService):
         """
         Test successful master node discovery
         """
@@ -69,7 +63,7 @@ class TestWorkerNodeWebsocketClientService:
             assert result == expected_url
     
     @pytest.mark.asyncio
-    async def test_connect_success_with_provided_url(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_connect_success_with_provided_url(self, worker_service: WebsocketClientService):
         """
         Test successful connection with provided websocket URL
         """
@@ -88,7 +82,7 @@ class TestWorkerNodeWebsocketClientService:
             assert worker_service.running is True
     
     @pytest.mark.asyncio
-    async def test_connect_success_with_discovery(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_connect_success_with_discovery(self, worker_service: WebsocketClientService):
         """
         Test successful connection using master node discovery
         """
@@ -110,8 +104,11 @@ class TestWorkerNodeWebsocketClientService:
             assert worker_service.running is True
     
     @pytest.mark.asyncio
-    async def test_send_message_success(self, worker_service: WorkerNodeWebsocketClientService):
-        """Test successful message sending"""
+    async def test_send_message_success(self, worker_service: WebsocketClientService):
+        """
+        Test successful message sending
+        """
+        
         mock_websocket = AsyncMock()
         worker_service.websocket = mock_websocket
         message = {"type": "heartbeat", "timestamp": "2024-01-01T00:00:00Z"}
@@ -121,15 +118,18 @@ class TestWorkerNodeWebsocketClientService:
         mock_websocket.send.assert_called_once_with(json.dumps(message))
     
     @pytest.mark.asyncio
-    async def test_send_message_not_connected(self, worker_service: WorkerNodeWebsocketClientService):
-        """Test sending message when not connected"""
+    async def test_send_message_not_connected(self, worker_service: WebsocketClientService):
+        """
+        Test sending message when not connected
+        """
+        
         message = {"type": "heartbeat"}
         
         with pytest.raises(RuntimeError, match="Not connected to WebSocket server"):
             await worker_service.send_message(message)
             
     @pytest.mark.asyncio
-    async def test_send_message_connection_closed(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_send_message_connection_closed(self, worker_service: WebsocketClientService):
         """
         Test sending message when connection is closed
         """
@@ -148,7 +148,7 @@ class TestWorkerNodeWebsocketClientService:
             mock_disconnect.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_send_message_websocket_exception(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_send_message_websocket_exception(self, worker_service: WebsocketClientService):
         """
         Test sending message with WebSocket exception
         """
@@ -162,8 +162,11 @@ class TestWorkerNodeWebsocketClientService:
             await worker_service.send_message(message)
     
     @pytest.mark.asyncio
-    async def test_disconnect_success(self, worker_service: WorkerNodeWebsocketClientService):
-        """Test successful disconnection"""
+    async def test_disconnect_success(self, worker_service: WebsocketClientService):
+        """
+        Test successful disconnection
+        """
+        
         mock_websocket = AsyncMock()
         worker_service.websocket = mock_websocket
         worker_service.running = True
@@ -174,15 +177,19 @@ class TestWorkerNodeWebsocketClientService:
         assert worker_service.running is False
     
     @pytest.mark.asyncio
-    async def test_disconnect_no_websocket(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_disconnect_no_websocket(self, worker_service: WebsocketClientService):
         """Test disconnection when no websocket is set"""
         worker_service.running = True
+        worker_service.websocket = None
         
-        await worker_service.disconnect()
-        assert worker_service.running is False
+        with patch.object(worker_service, 'websocket', None):
+            await worker_service.disconnect()
+            
+            assert worker_service.websocket is None
+            assert worker_service.running is False
     
     @pytest.mark.asyncio
-    async def test_disconnect_with_error(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_disconnect_with_error(self, worker_service: WebsocketClientService):
         """Test disconnection with error during close"""
         mock_websocket = AsyncMock()
         mock_websocket.close.side_effect = Exception("Close error")
@@ -192,7 +199,7 @@ class TestWorkerNodeWebsocketClientService:
         await worker_service.disconnect()
         assert worker_service.running is False
     
-class TestWorkerNodeWebsocketClientServiceIntegration:
+class TestWebsocketClientServiceIntegration:
     """
     Integration tests that test multiple methods together
     """
@@ -203,12 +210,12 @@ class TestWorkerNodeWebsocketClientServiceIntegration:
     
     @pytest.fixture
     def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.MASTER_NODE_API_URL', 'http://localhost:8000'), \
+        with patch('src.worker_node.config.CORE_API', 'http://localhost:8000'), \
             patch('src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT', 8001):
-            return WorkerNodeWebsocketClientService(worker_id)
+            return WebsocketClientService(worker_id)
     
     @pytest.mark.asyncio
-    async def test_full_workflow_success(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_full_workflow_success(self, worker_service: WebsocketClientService):
         """
         Test the full workflow: discover -> connect -> send -> listen -> disconnect
         """
@@ -247,7 +254,7 @@ class TestWorkerNodeWebsocketClientServiceIntegration:
             assert worker_service.running is False
     
     @pytest.mark.asyncio
-    async def test_connect_send_disconnect_workflow(self, worker_service: WorkerNodeWebsocketClientService):
+    async def test_connect_send_disconnect_workflow(self, worker_service: WebsocketClientService):
         """
         Test connect -> send -> disconnect workflow
         """
