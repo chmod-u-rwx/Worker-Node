@@ -18,15 +18,13 @@ class TestWebsocketClientService:
         """
         
         with patch.dict('os.environ', {
-            'CORE_API': 'http://localhost:8000',
-            'MASTER_NODE_WEBSOCKET_PORT': '8001'
+            'CORE_API_WS': 'http://localhost:8000',
         }):
             yield
     
     @pytest.fixture
     def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.CORE_API', 'http://localhost:8000'), \
-            patch('src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT', 8001):
+        with patch('src.worker_node.config.CORE_API_WS', 'ws://localhost:8000'):
             return WebsocketClientService(worker_id)
     
     def test_init_success(self, worker_id: UUID):
@@ -34,14 +32,13 @@ class TestWebsocketClientService:
         Test successful initialization
         """
 
-        with patch("src.worker_node.config.CORE_API", "http://mocked-api:1234"), \
+        with patch("src.worker_node.config.CORE_API_WS", "ws://mocked-api:1234"), \
             patch("src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT", 9999):
 
             service = WebsocketClientService(worker_id)
 
             assert service.worker_id == str(worker_id)
-            assert service.core_api == "http://mocked-api:1234"   # mocked value
-            assert service.websocket_port == 9999                 # mocked value
+            assert service.core_api_ws == "ws://mocked-api:1234"   # mocked value
             assert service.websocket is None
             assert service.running is False
     

@@ -16,5 +16,4 @@ if path_str is None:
 LOCAL_JOB_REPOSITORY_CACHE_PATH = Path(path_str)
 
 BASE_API_URI = os.getenv("BASE_API_URI")
-CORE_API = os.getenv("CORE_API")
-MASTER_NODE_WEBSOCKET_PORT = int(os.getenv("MASTER_NODE_WEBSOCKET_PORT", 8001))
+CORE_API_WS=os.getenv("CORE_API_WS")
