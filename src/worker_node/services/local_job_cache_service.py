@@ -6,7 +6,7 @@ from ..exceptions import AlreadyExists
 from ..db.job_metadata import JobMetadataDatabase
 from ..db.job_repository import JobRepositoryDatabase
 from ..models.job import Job
-from ..config import BASE_API_URI
+from ..config import CORE_API_URI
 
 class JobNotFound(Exception):
     ...
@@ -54,7 +54,7 @@ class LocalJobCacheService:
     
     def fetch_job_information(self, job_id: UUID4) -> Job:
         try:
-            response = requests.get(f"{BASE_API_URI}/jobs/get/{job_id}")
+            response = requests.get(f"{CORE_API_URI}/jobs/get/{job_id}")
 
             if response.status_code == 404:
                 raise JobNotFound("Job does not exist") 

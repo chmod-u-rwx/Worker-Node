@@ -1,32 +1,28 @@
 import json
+import httpx
 from typing import Any, Dict, Optional
 from uuid import UUID
 import websockets
 from websockets.exceptions import ConnectionClosed, InvalidURI, InvalidHandshake, WebSocketException
-import src.worker_node.config as config
+from src.worker_node.config import CORE_API_URI
 
 class WebsocketClientService:
     def __init__(self, worker_id: UUID):
-        if not config.CORE_API_WS:
-            raise ValueError("CORE_API not set")
-        
         self.worker_id = str(worker_id)
-        self.core_api_ws = config.CORE_API_WS
         self.websocket = None
         self.running = False
     
     async def discover_master_node(self) -> str:
-        import httpx
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(f"{self.core_api_ws.replace('ws://', 'http://')}/master-node/discover")
+                response = await client.get(f"{CORE_API_URI}/master-node/discover")
                 response.raise_for_status()
                 master_node_data = response.json()
                 master_address = master_node_data.get("master_address")
                 if not master_address:
                     raise ValueError("Master node address not found in response")
 
-                websocket_url = f"{self.core_api_ws}/ws/connect/{self.worker_id}"
+                websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
                 print(f"Discovered master node websocket at: {websocket_url}")
                 return websocket_url
         except httpx.RequestError as e:

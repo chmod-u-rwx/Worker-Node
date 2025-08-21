@@ -15,5 +15,4 @@ if path_str is None:
 
 LOCAL_JOB_REPOSITORY_CACHE_PATH = Path(path_str)
 
-BASE_API_URI = os.getenv("BASE_API_URI")
-CORE_API_WS=os.getenv("CORE_API_WS")
+CORE_API_URI=os.getenv("CORE_API_URI")

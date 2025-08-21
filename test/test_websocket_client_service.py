@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
-from worker_node.services.websocket_client_service import WebsocketClientService
+from src.worker_node.services.websocket_client_service import WebsocketClientService
 
 class TestWebsocketClientService:
     
@@ -18,13 +18,13 @@ class TestWebsocketClientService:
         """
         
         with patch.dict('os.environ', {
-            'CORE_API_WS': 'http://localhost:8000',
+            'CORE_API_URI': 'http://localhost:8000',
         }):
             yield
     
     @pytest.fixture
     def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.CORE_API_WS', 'ws://localhost:8000'):
+        with patch('src.worker_node.config.CORE_API_URI', 'ws://localhost:8000'):
             return WebsocketClientService(worker_id)
     
     def test_init_success(self, worker_id: UUID):
@@ -32,13 +32,11 @@ class TestWebsocketClientService:
         Test successful initialization
         """
 
-        with patch("src.worker_node.config.CORE_API_WS", "ws://mocked-api:1234"), \
-            patch("src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT", 9999):
+        with patch("src.worker_node.config.CORE_API_URI", "ws://mocked-api:1234"):
 
             service = WebsocketClientService(worker_id)
 
             assert service.worker_id == str(worker_id)
-            assert service.core_api_ws == "ws://mocked-api:1234"   # mocked value
             assert service.websocket is None
             assert service.running is False
     
@@ -48,7 +46,7 @@ class TestWebsocketClientService:
         Test successful master node discovery
         """
         mock_response = MagicMock()
-        mock_response.json.return_value = {"master_address": "192.168.1.100"}
+        mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
         mock_response.raise_for_status.return_value = None
         
         with patch('httpx.AsyncClient') as mock_client:
@@ -207,8 +205,7 @@ class TestWebsocketClientServiceIntegration:
     
     @pytest.fixture
     def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.CORE_API', 'http://localhost:8000'), \
-            patch('src.worker_node.config.MASTER_NODE_WEBSOCKET_PORT', 8001):
+        with patch('src.worker_node.config.CORE_API_URI', 'http://localhost:8000'):
             return WebsocketClientService(worker_id)
     
     @pytest.mark.asyncio
@@ -226,7 +223,7 @@ class TestWebsocketClientServiceIntegration:
         received_message = {"type": "task", "data": "test_task"}
         
         mock_response = MagicMock()
-        mock_response.json.return_value = {"master_address": "192.168.1.100"}
+        mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
         mock_response.raise_for_status.return_value = None
         
         mock_websocket.recv.side_effect = [
