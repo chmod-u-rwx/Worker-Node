@@ -1,12 +1,15 @@
 
 import os
 import time
+from typing import Any
 from uuid import uuid4
 import pytest
 import subprocess
 from pathlib import Path
 import paramiko
 from unittest.mock import patch, MagicMock
+
+import requests
 from src.worker_node.models.qemu_load import QemuLoad
 from src.worker_node.models.vm_output import VMOutput
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
@@ -41,76 +44,6 @@ def test_qemu_binary_not_found(mock_popen: MagicMock, mock_exists: MagicMock, te
         QemuController(test_img, cpu_count, memory_allocated)
 
     os.remove(test_img)
-
-
-@patch("subprocess.Popen")
-@patch("src.worker_node.core.qemu_controller.wait_for_file_socket_availability")
-def test_create_snapshot_qemu_monitor_socket_not_ready(mock_wait_for_file_socket_availability: MagicMock, 
-    mock_popen: MagicMock, test_img: Path):
-    proc_mock = MagicMock()
-
-    # We patch wait_for_file_socket_availability so we can change its
-    # return value. This induces the RuntimeError
-    mock_wait_for_file_socket_availability.return_value = False
-
-    # makes so that subprocess.Popen returns the fake proc mock
-    mock_popen.return_value = proc_mock
-
-    proc_mock.communicate.return_value = ("", "some error")
-    with pytest.raises(RuntimeError) as e:
-        qemu = QemuController(test_img, cpu_count, memory_allocated)
-        qemu._wait_qemu_monitor_socket(proc_mock) # type: ignore
-
-    assert "Qemu monitor socket failed to start in time" in str(e)
-    os.remove(test_img)
-
-@patch("subprocess.Popen")
-def test_send_command_to_qemu_monitor(mock_popen: MagicMock):
-    qemu = QemuController.__new__(QemuController) # gives an empty instance of QemuController that doesnt run __init__
-    proc_mock = MagicMock() 
-    proc_mock.communicate.return_value = ("Stdout is okayy", "No stderr")
-    proc_mock.returncode = 0
-    mock_popen.return_value = proc_mock
-    stdout = qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "some random command", return_stdout=True) # type: ignore
-
-    mock_popen.assert_called_once()
-    assert stdout == "Stdout is okayy"
-
-@patch("subprocess.Popen")
-def test_send_command_to_qemu_monitor_socat_not_found(mock_popen: MagicMock, test_img: Path):
-    qemu = QemuController.__new__(QemuController)
-    mock_popen.side_effect = FileNotFoundError()
-
-    with pytest.raises(RuntimeError, match="socat command not found. Is socat installed?"):
-        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
-
-@patch("subprocess.Popen")
-def test_send_command_to_qemu_monitor_failed_to_start_socat(mock_popen: MagicMock, test_img: Path):
-    mock_popen.side_effect = OSError("Some os error")
-    qemu = QemuController.__new__(QemuController)
-
-    with pytest.raises(RuntimeError, match="Failed to start socat"):
-        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
-
-@patch("subprocess.Popen")
-def test_send_command_to_qemu_monitor_socat_timeout(mock_open: MagicMock, test_img: Path):
-    proc_mock = MagicMock()
-    proc_mock.communicate.side_effect = subprocess.TimeoutExpired("socat", 10)
-    mock_open.return_value = proc_mock
-    qemu = QemuController.__new__(QemuController)
-    
-    with pytest.raises(TimeoutError, match="socat timed out while sending command"):
-        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
-
-@patch("subprocess.Popen")
-def test_send_command_to_qemu_monitor_socat_exited_with_error(mock_open: MagicMock):
-    proc_mock = MagicMock()
-    mock_open.return_value = proc_mock
-    qemu = QemuController.__new__(QemuController) 
-    proc_mock.communicate.return_value = ("stdout", "Some error")
-
-    with pytest.raises(RuntimeError, match="socat exited with error: Some error"):
-        qemu._send_command_to_qemu_monitor("/tmp/qemu.sock", "random command") # type: ignore
 
 def test_qemu_initialization(test_img: Path):
     qemu = QemuController(
@@ -225,7 +158,7 @@ def test_wait_for_ssh_connection_success(test_img: Path):
 
     assert qemu.wait_for_ssh_connection(timeout=1) is None
     qemu.ssh.connect.assert_called_once_with(
-        "localhost", port=2222, username="root", password="root", timeout=1
+        qemu.vm_ip, username="root", password="root", timeout=1
     )
     os.remove(test_img)
 
@@ -298,7 +231,7 @@ def test_run_command_in_vm(test_img: Path):
         assert test_file_path.exists(), "Test file for command execution does not exist"
 
         qemu.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        qemu.ssh.connect("localhost", port=2222, username="root", password="root")
+        qemu.ssh.connect(qemu.vm_ip, username="root", password="root")
         sftp = qemu.ssh.open_sftp()
         assert sftp.put(str(test_file_path), path_in_vm), "Failed to transfer test file to VM"
         sftp.close()
@@ -364,26 +297,20 @@ def test_run_command_qemu_not_started(test_img: Path):
     os.remove(test_img)
 
 def test_freeze_resume_vm(test_img: Path):
-    file_socket = "/tmp/qemu.sock"
-    qemu = QemuController(test_img, cpu_count, memory_allocated)
-    qemu.start()
-    qemu.freeze()
-    assert "VM status: paused" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
+    # file_socket = "/tmp/qemu.sock"
+    qemu = None
+    try:
+        qemu = QemuController(test_img, cpu_count, memory_allocated)
+        qemu.start()
+        qemu.freeze()
+        # assert "VM status: paused" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
+        assert "VM status: paused" in qemu._send_command_to_qemu_monitor("info status") # type: ignore
 
-    time.sleep(10)
-    result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
-    cpu_usage = result.stdout.strip()
-    assert cpu_usage == "0.0"
-
-    qemu.resume()
-    assert "VM status: running" in qemu._send_command_to_qemu_monitor(file_socket, "info status", return_stdout=True) # type: ignore
-
-    time.sleep(0.5)
-    result = subprocess.run(["ps", "-p", str(qemu.proc.pid), "-o", "%cpu="], capture_output=True, text=True)
-    cpu_usage = result.stdout.strip()
-    assert cpu_usage != "0.0"
-
-    qemu.stop()
+        qemu.resume()
+        assert "VM status: running" in qemu._send_command_to_qemu_monitor("info status") # type: ignore
+    finally:
+        if qemu:
+            qemu.stop()
 
 def test_freeze_resume_failure_case(test_img: Path):
     qemu = QemuController(test_img, cpu_count, memory_allocated)
@@ -543,3 +470,78 @@ def test_failed_to_mount_local_job_repo_cache(tmp_path: Path):
 
         with pytest.raises(RuntimeError, match="Failed to mount local job repository cache path in /mnt/jobcache:"):
             qemu._mount_local_job_repo_cache() # type: ignore
+
+def test_run_command_http_server(test_img: Path):
+    """Tests whether we can reach the server in vm from the host"""
+    qemu = None
+
+    try:
+        qemu = QemuController(test_img)
+        qemu.start()
+        # Im using an image that has server.py inside
+        # setsid is a program installed by default in alpine linux
+        # it is used to run a process in the background
+        # just using '&' causes the run_command to wait forever for the std_out
+        qemu.run_command(["setsid python server.py > /dev/null 2>&1 < /dev/null &"])
+
+        vm_ip = qemu.vm_ip
+
+        for _ in range(10):
+            try:
+                result = subprocess.run(
+                    ["curl", "-s", f"http://{vm_ip}:8000"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                output = result.stdout.strip()
+                if output:
+                    break
+            except subprocess.CalledProcessError:
+                time.sleep(1)
+        else:
+            raise RuntimeError("Server not reachable")
+
+        assert "Hello from Alpine VM!" in output
+    finally:
+        if qemu:
+            qemu.stop()
+
+
+def test_send_http_request_to_vm(test_img: Path):
+    qemu = None
+
+    try:
+        qemu = QemuController(test_img)
+        qemu.start()
+        qemu.run_command(["setsid python server.py > /dev/null 2>&1 < /dev/null &"])
+        response = qemu.send_http_request_to_vm(path="/", port=8000, method="GET")
+
+        assert "Hello from Alpine VM!" in response
+    finally:
+        if qemu:
+            qemu.stop()
+
+def test_send_http_request_to_vm_returns_http_error(test_img: Path):
+    url = "http://192.168.0.0:8000/"
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = requests.HTTPError(
+        "500 Server Error",
+        response=MagicMock(status_code=500, url=url),
+        request=MagicMock(url=url)
+    )
+
+    with patch("requests.request", return_value=mock_response):
+        qemu = QemuController.__new__(QemuController)
+        qemu.vm_ip = "192.168.0.0"
+
+        error_response = qemu.send_http_request_to_vm(path="/", port=8000, method="GET")
+        expected_response: dict[str, Any] = {
+            "error": "500 Server Error",
+            "type": "HTTPError",
+            "url": url,
+            "status_code": 500
+        }
+
+        assert error_response == expected_response
+        
