@@ -2,12 +2,19 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from typing import Any, List
+import httpx
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 from websockets import InvalidURI
 from websockets.exceptions import ConnectionClosed, WebSocketException
-from src.worker_node.services.websocket_client_service import WebsocketClientService
+from src.worker_node.services.websocket_client_service import (
+    WebsocketClientService,
+    MasterNodeNotFound,
+    MasterNodeInvalidResponse,
+    MasterNodeServerError,
+    MasterNodeDiscoveryError,
+)
 
 class TestWebsocketClientService:
     
@@ -69,7 +76,9 @@ class TestWebsocketClientService:
         """
         Test successful master node discovery
         """
+        
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
         mock_response.raise_for_status.return_value = None
         
@@ -80,6 +89,65 @@ class TestWebsocketClientService:
             
             expected_url = f"ws://192.168.1.100:8001/ws/connect/{websocket_client_service.worker_id}"
             assert result == expected_url
+    
+    @pytest.mark.asyncio
+    async def test_discover_master_node_404(self, websocket_client_service: WebsocketClientService):
+        """
+        Test master node discovery returns 404
+        """
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = Exception("404 Not Found")
+        mock_response.json.return_value = {}
+        
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            with pytest.raises(MasterNodeNotFound):
+                await websocket_client_service.discover_master_node()
+    
+    @pytest.mark.asyncio
+    async def test_discover_master_node_500(self, websocket_client_service: WebsocketClientService):
+        """
+        Test master node discovery returns 500
+        """
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.raise_for_status.side_effect = Exception("500 Server Error")
+        mock_response.json.return_value = {}
+
+        with patch('httpx.AsyncClient') as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            with pytest.raises(MasterNodeServerError):
+                await websocket_client_service.discover_master_node()
+
+    @pytest.mark.asyncio
+    async def test_discover_master_node_invalid_response(self, websocket_client_service: WebsocketClientService):
+        """
+        Test master node discovery returns invalid response (no master_address)
+        """
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {}
+
+        with patch('httpx.AsyncClient') as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            with pytest.raises(MasterNodeInvalidResponse):
+                await websocket_client_service.discover_master_node()
+
+    @pytest.mark.asyncio
+    async def test_discover_master_node_request_error(self, websocket_client_service: WebsocketClientService):
+        """
+        Test master node discovery raises httpx.RequestError
+        """
+        
+        with patch('httpx.AsyncClient') as mock_client:
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(side_effect=httpx.RequestError("Network error"))
+            with pytest.raises(MasterNodeDiscoveryError):
+                await websocket_client_service.discover_master_node()
     
     @pytest.mark.asyncio
     async def test_connect_success_with_provided_url(self, websocket_client_service: WebsocketClientService):
@@ -430,6 +498,7 @@ class TestWebsocketClientServiceIntegration:
         test_message = {"type": "heartbeat", "timestamp": str(now)}
         
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
         mock_response.raise_for_status.return_value = None
         
@@ -469,6 +538,7 @@ class TestWebsocketClientServiceIntegration:
         received_message = {"type": "task", "data": "test_task"}
         
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
         mock_response.raise_for_status.return_value = None
 
