@@ -134,7 +134,7 @@ class TestWebsocketClientService:
         websocket_url = "invalid://url"
         
         with patch('websockets.connect', side_effect=InvalidURI("invalid://url", "Invalid URI")):
-            with pytest.raises(InvalidURI):
+            with pytest.raises(ConnectionError, match="Failed to connect after 3 attempts"):
                 await websocket_client_service.connect(websocket_url)
     
     @pytest.mark.asyncio

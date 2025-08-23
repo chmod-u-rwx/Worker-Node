@@ -1,4 +1,3 @@
-import asyncio
 import json
 import httpx
 from typing import Any, Dict, Optional
@@ -21,26 +20,6 @@ class WebsocketClientService:
         self.current_websocket_url = None
         self.reconnect_attempts = 0
     
-    async def discover_master_node(self) -> str:
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"{CORE_API_URI}/master-node/discover")
-                response.raise_for_status()
-                master_node_data = response.json()
-                master_address = master_node_data.get("master_address")
-                if not master_address:
-                    raise ValueError("Master node address not found in response")
-                
-                websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
-                print(f"Discovered master node websocket at: {websocket_url}")
-                return websocket_url
-        except httpx.RequestError as e:
-            print(f"HTTP request error during master node discovery: {e}")
-            raise
-        except Exception as e:
-            print(f"Unexpected error during master node discovery: {e}")
-            raise
-    
     async def connect(self, websocket_url: Optional[str] = None) -> None:
         if not websocket_url:
                 websocket_url = await self.discover_master_node()
@@ -57,36 +36,24 @@ class WebsocketClientService:
                 print("Successfully connected to WebSocket server")
                 return
             
-            except (InvalidURI, InvalidHandshake) as e:
-                print(f"WebSocket connection failed (invalid URI or handshake): {e}")
-                if attempt == self.max_reconnect_attempts:
-                    raise
-                await asyncio.sleep(self.reconnect_delay)
-                attempt += 1
-                
-            except ConnectionClosed as e:
-                print(f"WebSocket connection failed (invalid URI or handshake): {e}")
-                if attempt == self.max_reconnect_attempts:
+            except (InvalidURI, InvalidHandshake, ConnectionClosed) as e:
+                print(f"{type(e).__name__} during WebSocket connection (attempt {attempt}): {e}")
+                if isinstance(e, ConnectionClosed) and attempt == self.max_reconnect_attempts:
                     print("Max reconnect attempts reached, trying to discover new master node")
-                    
-                    try:
-                        websocket_url = await self.discover_master_node()
-                        self.current_websocket_url = websocket_url
-                        print(f"Got new master node URL: {websocket_url}, retrying connection...")
-                        
-                        attempt = 1
-                        continue
-                    except Exception as discovery_error:
-                        print(f"Failed to discover new master node: {discovery_error}")
-                        raise
-                await asyncio.sleep(self.reconnect_delay)
-                attempt += 1
+                    websocket_url = await self.discover_master_node()
+                    self.current_websocket_url = websocket_url
+                    print(f"Got new master node URL: {websocket_url}, retrying connection...")
+                    attempt = 1
+                    continue
+                
+                if attempt == self.max_reconnect_attempts:
+                    break
                 
             except Exception as e:
                 print(f"Unexpected error during WebSocket connection (attempt {attempt}): {e}")
                 if attempt == self.max_reconnect_attempts:
                     break
-                await asyncio.sleep(self.reconnect_delay)
+            finally:
                 attempt += 1
         
         raise ConnectionError(f"Failed to connect after {self.max_reconnect_attempts} attempts")
@@ -95,12 +62,14 @@ class WebsocketClientService:
         print("Attempting to reconnect...")
         self.reconnect_attempts += 1
         
+        # Always close and clear any existing websocket
         if self.websocket:
             try:
                 await self.websocket.close()
             except Exception as e:
                 print(f"Error closing existing websocket: {e}")
-            self.websocket = None
+            finally:
+                self.websocket = None
         
         try:
             if self.reconnect_attempts <= self.max_reconnect_attempts:
@@ -112,6 +81,17 @@ class WebsocketClientService:
                 await self.connect()
                 print("Reconnection with new master node successful")
                 return True
+        
+        except ConnectionError as e:
+            print(f"Reconnecition failed with ConnectionError: {e}")
+            await self.disconnect()
+            try:
+                await self.connect()
+                print("Reconnection after forced disconnect successful")
+                return True
+            except Exception as e:
+                print(f"Final reconnection attempt failed: {e}")
+                return False
         
         except Exception as e:
             print(f"Reconnection failed: {e}")
@@ -127,35 +107,13 @@ class WebsocketClientService:
             try:
                 try:
                     message = await self.websocket.recv()
-                except ConnectionClosed as e:
-                    print(f"WebSocket connection closed: {e}")
+                except (ConnectionClosed, WebSocketException, Exception) as e:
+                    print(f"{type(e).__name__} while listening for message: {e}")
                     if self.running:
                         if await self.reconnect():
                             continue
                         else:
                             print("Failed to reconnect, stopping message listener")
-                            break
-                    else:
-                        break
-                
-                except WebSocketException as e:
-                    print(f"WebSocket error while receiving: {e}")
-                    if self.running:
-                        if await self.reconnect():
-                            continue
-                        else:
-                            print("Failed to reconnect after WebSocket error")
-                            break
-                    else:
-                        break
-                        
-                except Exception as e:
-                    print(f"Unexpected error while receiving message: {e}")
-                    if self.running:
-                        if await self.reconnect():
-                            continue
-                        else:
-                            print("Failed to reconnect after unexpected error")
                             break
                     else:
                         break
@@ -186,26 +144,13 @@ class WebsocketClientService:
                 print(f"Sent message: {message}")
                 return
             
-            except ConnectionClosed as e:
-                print(f"WebSocket connection closed while sending: {e}")
+            except (ConnectionClosed, WebSocketException, Exception) as e:
+                print(f"{type(e).__name__} while sending message: {e}")
                 if retry_on_failure and attempt < max_send_attempts - 1:
                     if await self.reconnect():
                         continue
-                self.running = False
-                raise
-            
-            except WebSocketException as e:
-                print(f"WebSocket error while sending: {e}")
-                if retry_on_failure and attempt < max_send_attempts - 1:
-                    if await self.reconnect():
-                        continue
-                raise
-            
-            except Exception as e:
-                print(f"Unexpected error while sending message: {e}")
-                if retry_on_failure and attempt < max_send_attempts - 1:
-                    if await self.reconnect():
-                        continue
+                if isinstance(e, ConnectionClosed):
+                    self.running = False
                 raise
     
     async def disconnect(self) -> None:
@@ -232,3 +177,16 @@ class WebsocketClientService:
         if not self.is_connected():
             print("WebSocket not connected, attempting to connect...")
             await self.connect()
+    
+    async def discover_master_node(self) -> str:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{CORE_API_URI}/master-node/discover")
+            response.raise_for_status()
+            master_node_data = response.json()
+            master_address = master_node_data.get("master_address")
+            if not master_address:
+                raise ValueError("Master node address not found in response")
+            
+            websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
+            print(f"Discovered master node websocket at: {websocket_url}")
+            return websocket_url
