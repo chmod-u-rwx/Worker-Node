@@ -170,13 +170,17 @@ class QemuController:
         finally:
             clean_process(proc=proc_qemu)
 
-    def send_http_request_to_vm(self, path: str,
+    def send_http_request_to_vm(self, method: str,
+                                path: str,
                                 port: int,
                                 query_params: Optional[dict[str, Any]] = None,
                                 body: Optional[dict[str, Any]] = None,  
                                 headers: Optional[dict[str, str]] = None, 
-                                method: str = "GET") -> Any:
-        
+                                ) -> Any:
+
+        if not self.status != QemuStatus.RUNNING:
+            raise RuntimeError("Qemu has not yet started.") 
+
         url = f"http://{self.vm_ip}:{port}{path}"
 
         try:
@@ -296,7 +300,7 @@ class QemuController:
             raise RuntimeError("Qemu binary not found. Not installed?")
 
     def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str], host: str = "127.0.0.1", port: int = 5555, timeout: int = 10):
-        if wait_for_tcp_monitor(host="127.0.0.1", port=self.monitor_tcp_port, timeout=10):
+        if wait_for_tcp_monitor(host=host, port=port, timeout=timeout):
             return
         
         # Read stderr if we failed to wait for tcp monitor
@@ -316,7 +320,7 @@ class QemuController:
         """
         output = b""
         try:
-            with socket.create_connection((host, self.monitor_tcp_port), timeout=timeout) as sock:
+            with socket.create_connection((host, 5555), timeout=timeout) as sock:
                 sock.sendall(f"{command}\n".encode())
                 sock.settimeout(timeout)
                 
