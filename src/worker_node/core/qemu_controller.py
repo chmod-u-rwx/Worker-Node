@@ -329,7 +329,7 @@ class QemuController:
                     except socket.timeout:
                         break
         except Exception as e:
-            raise RuntimeError(f"Failed to connect or communicate with QEMU monitor at {host}:{port}: {e}") from e
+            raise RuntimeError(f"Failed to connect or communicate with QEMU monitor at {host}:{self.monitor_tcp_port}: {e}") from e
 
         try:
             return output.decode().strip()

@@ -544,4 +544,3 @@ def test_send_http_request_to_vm_returns_http_error(test_img: Path):
         }
 
         assert error_response == expected_response
-        
