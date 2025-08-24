@@ -12,7 +12,7 @@ from typing import Any, List, Optional
 from ..helpers.process import clean_process
 from ..models.qemu_load import QemuLoad
 from ..helpers.process import clean_process
-from ..helpers.socket import wait_for_tcp_monitor
+from ..helpers.socket import wait_for_tcp_monitor, get_free_port
 from ..config import BASE_IMG_FILE, VIRTUALIZATION, LOCAL_JOB_REPOSITORY_CACHE_PATH
 from ..models.vm_output import VMOutput
 import paramiko
@@ -34,6 +34,7 @@ class QemuController:
         self.status = QemuStatus.STOPPED
         self.boot_time = 0
         self.ssh = paramiko.SSHClient()
+        self.monitor_tcp_port = get_free_port()
 
         # Copy the base img file into img_path
         shutil.copy(BASE_IMG_FILE, img_path)
@@ -42,9 +43,6 @@ class QemuController:
     def start(self):
         if self.img_path.exists() == False:
             raise RuntimeError(f"QEMU img not found at {self.img_path}. Ensure that PATH to img is correct.")
-
-        if os.path.exists("/tmp/qemu.sock"):
-            os.remove("/tmp/qemu.sock")
 
         if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
@@ -175,7 +173,7 @@ class QemuController:
     def send_http_request_to_vm(self, path: str,
                                 port: int,
                                 query_params: Optional[dict[str, Any]] = None,
-                                body: Optional[Any] = None,  
+                                body: Optional[dict[str, Any]] = None,  
                                 headers: Optional[dict[str, str]] = None, 
                                 method: str = "GET") -> Any:
         
@@ -238,7 +236,7 @@ class QemuController:
         
         accel = "tcg" if VIRTUALIZATION == "darwin" else "kvm:tcg,usb=off"
         cpu = "max" if VIRTUALIZATION == "darwin" else "host"
-        netdev = "vmnet-bridged,ifname=en0,id=net0" if VIRTUALIZATION == "darwin" else ""
+        netdev = "vmnet-bridged,ifname=en0,id=net0" if VIRTUALIZATION == "darwin" else "bridge,id=net0,br=br0"
         mac_address = self._generate_mac_address()
 
         # Enables TCP qemu monitor
@@ -256,7 +254,7 @@ class QemuController:
             "-device", f"virtio-net,netdev=net0,mac={mac_address}",
             "-chardev", monitor_chardev,
             "-mon", monitor,
-            "-serial", "mon:stdio",  # interactive monitor + serial console
+            "-serial", "mon:stdio", 
             "-fsdev", f"local,id=fsdev0,path={LOCAL_JOB_REPOSITORY_CACHE_PATH},security_model=none",
             "-device", "virtio-9p-pci,fsdev=fsdev0,mount_tag=jobcache",
             "-nographic"
@@ -298,7 +296,7 @@ class QemuController:
             raise RuntimeError("Qemu binary not found. Not installed?")
 
     def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str], host: str = "127.0.0.1", port: int = 5555, timeout: int = 10):
-        if wait_for_tcp_monitor(host="127.0.0.1", port=5555, timeout=10):
+        if wait_for_tcp_monitor(host="127.0.0.1", port=self.monitor_tcp_port, timeout=10):
             return
         
         # Read stderr if we failed to wait for tcp monitor
@@ -311,14 +309,14 @@ class QemuController:
 
         raise RuntimeError(f"QEMU TCP monitor failed to start in time.\nQEMU stderr: {qemu_stderr}")
 
-    def _send_command_to_qemu_monitor(self, command: str, host: str='127.0.0.1', port:int=5555, timeout: float = 2.0) -> str:
+    def _send_command_to_qemu_monitor(self, command: str, host: str='127.0.0.1', timeout: float = 2.0) -> str:
         """
         Sends a command to the QEMU monitor via TCP and returns the full output.
         Raises RuntimeError on connection issues or decoding errors.
         """
         output = b""
         try:
-            with socket.create_connection((host, port), timeout=timeout) as sock:
+            with socket.create_connection((host, self.monitor_tcp_port), timeout=timeout) as sock:
                 sock.sendall(f"{command}\n".encode())
                 sock.settimeout(timeout)
                 
@@ -367,19 +365,19 @@ class QemuController:
 
     def _listen_for_vm_ip(self, timeout: int=120) -> str:
         PORT = 9999
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.bind(("", PORT))
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sock.bind(("", PORT))
 
-        start_time = time.perf_counter()
-        while (time.perf_counter() - start_time) < timeout:
-        # while True:
-            data, _ = sock.recvfrom(1024)
-            try:
-                msg = str(data.decode("utf-8").strip())
-                return msg
-            except UnicodeDecodeError:
-                continue
+            start_time = time.perf_counter()
+            while (time.perf_counter() - start_time) < timeout:
+                data, _ = sock.recvfrom(1024)
+                try:
+                    msg = data.decode("utf-8").strip()
+                    return msg
+                except UnicodeDecodeError:
+                    continue
+        # socket auto-closed here
         return ""
 
     def delete(self):
