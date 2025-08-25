@@ -244,7 +244,7 @@ class QemuController:
         mac_address = self._generate_mac_address()
 
         # Enables TCP qemu monitor
-        monitor_chardev = f"socket,id=mon1,host=127.0.0.1,port=5555,server=on,wait=off"
+        monitor_chardev = f"socket,id=mon1,host=127.0.0.1,port={self.monitor_tcp_port},server=on,wait=off"
         monitor = "chardev=mon1,mode=readline"
 
         cmd = [
@@ -299,8 +299,8 @@ class QemuController:
         except FileNotFoundError:
             raise RuntimeError("Qemu binary not found. Not installed?")
 
-    def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str], host: str = "127.0.0.1", port: int = 5555, timeout: int = 10):
-        if wait_for_tcp_monitor(host=host, port=port, timeout=timeout):
+    def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str], host: str = "127.0.0.1", timeout: int = 10):
+        if wait_for_tcp_monitor(host=host, port=self.monitor_tcp_port, timeout=timeout):
             return
         
         # Read stderr if we failed to wait for tcp monitor
@@ -320,7 +320,7 @@ class QemuController:
         """
         output = b""
         try:
-            with socket.create_connection((host, 5555), timeout=timeout) as sock:
+            with socket.create_connection((host, self.monitor_tcp_port), timeout=timeout) as sock:
                 sock.sendall(f"{command}\n".encode())
                 sock.settimeout(timeout)
                 
