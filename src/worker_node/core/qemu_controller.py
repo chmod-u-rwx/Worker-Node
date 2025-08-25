@@ -2,15 +2,17 @@ import os
 import shutil
 import time
 import subprocess
+import socket
+import random
+import requests
 from pathlib import Path
 from enum import Enum
-from typing import List 
-from typing import Optional
+from typing import Any, List, Optional 
 
 from ..helpers.process import clean_process
 from ..models.qemu_load import QemuLoad
 from ..helpers.process import clean_process
-from ..helpers.socket import wait_for_file_socket_availability
+from ..helpers.socket import wait_for_tcp_monitor, get_free_port
 from ..config import BASE_IMG_FILE, VIRTUALIZATION, LOCAL_JOB_REPOSITORY_CACHE_PATH
 from ..models.vm_output import VMOutput
 import paramiko
@@ -27,11 +29,12 @@ class QemuController:
         
         self.img_path = img_path 
         self.cpu_count = cpu_count
-        self.snapshot_name = "base"
+        self.snapshot_name = "basetest"
         self.memory_allocated = memory_allocated
         self.status = QemuStatus.STOPPED
         self.boot_time = 0
         self.ssh = paramiko.SSHClient()
+        self.monitor_tcp_port = get_free_port()
 
         # Copy the base img file into img_path
         shutil.copy(BASE_IMG_FILE, img_path)
@@ -40,9 +43,6 @@ class QemuController:
     def start(self):
         if self.img_path.exists() == False:
             raise RuntimeError(f"QEMU img not found at {self.img_path}. Ensure that PATH to img is correct.")
-
-        if os.path.exists("/tmp/qemu.sock"):
-            os.remove("/tmp/qemu.sock")
 
         if self.status == QemuStatus.STARTED:
             raise RuntimeError("QEMU is already running")        
@@ -89,7 +89,7 @@ class QemuController:
         
         try:
             self.freeze()
-            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"loadvm {self.snapshot_name}")
+            self._send_command_to_qemu_monitor(f"loadvm {self.snapshot_name}")
             self.resume()
         except Exception as e:
             raise RuntimeError(f"Failed to reset vm. An unexpected error occured: {e}")
@@ -99,7 +99,7 @@ class QemuController:
             raise Exception("Qemu has not yet started")
 
         try:
-            self._send_command_to_qemu_monitor("/tmp/qemu.sock", "stop")
+            self._send_command_to_qemu_monitor("stop")
         except (RuntimeError, TimeoutError) as e:
             raise RuntimeError("Failed to freeze vm") from e
         
@@ -108,7 +108,7 @@ class QemuController:
             raise Exception("Qemu has not yet started")
 
         try:
-            self._send_command_to_qemu_monitor("/tmp/qemu.sock", "cont")
+            self._send_command_to_qemu_monitor("cont")
         except (RuntimeError, TimeoutError) as e:
             raise RuntimeError("Failed to resume vm") from e
         
@@ -126,7 +126,7 @@ class QemuController:
         while (time.perf_counter() - start_time) < timeout:
             try:
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                self.ssh.connect("localhost", port=2222, username="root", password="root", timeout=1)
+                self.ssh.connect(self.vm_ip, username="root", password="root", timeout=1)
 
                 _, stdout, stderr = self.ssh.exec_command(cmd)
                 returncode = stdout.channel.recv_exit_status()
@@ -158,12 +158,56 @@ class QemuController:
 
     def create_snapshot(self):
         proc_qemu = self._start_qemu_no_loadvm()
+        vm_ip = self._listen_for_vm_ip()
+        if not vm_ip:
+            raise RuntimeError("Failed to get vm ip")
+        self.vm_ip = vm_ip.split(":")[1] 
+
         try:
             self._wait_qemu_monitor_socket(proc_qemu)
             self.wait_for_ssh_connection()
-            self._send_command_to_qemu_monitor("/tmp/qemu.sock", f"savevm {self.snapshot_name}")
+            self._send_command_to_qemu_monitor(f"savevm {self.snapshot_name}")
         finally:
             clean_process(proc=proc_qemu)
+
+    def send_http_request_to_vm(self, method: str,
+                                path: str,
+                                port: int,
+                                query_params: Optional[dict[str, Any]] = None,
+                                body: Optional[dict[str, Any]] = None,  
+                                headers: Optional[dict[str, str]] = None, 
+                                ) -> Any:
+
+        if not self.status != QemuStatus.RUNNING:
+            raise RuntimeError("Qemu has not yet started.") 
+
+        url = f"http://{self.vm_ip}:{port}{path}"
+
+        try:
+            response = requests.request(
+                method=method,
+                url=url,
+                params=query_params,
+                json=body,
+                headers=headers
+                )
+
+            # if response is an http error, raise it
+            response.raise_for_status()
+
+            # useful if server doesnt return json response
+            try:
+                return response.json()
+            except ValueError:
+                return response.text
+            
+        except requests.RequestException as e:
+            return {
+                "error": str(e),
+                "type": type(e).__name__,
+                "url": getattr(e.request, "url", None),
+                "status_code": getattr(getattr(e, "response", None), "status_code", None)
+            }
 
     def get_resource_load(self) -> QemuLoad:
         if self.status != QemuStatus.STARTED:
@@ -196,6 +240,12 @@ class QemuController:
         
         accel = "tcg" if VIRTUALIZATION == "darwin" else "kvm:tcg,usb=off"
         cpu = "max" if VIRTUALIZATION == "darwin" else "host"
+        netdev = "vmnet-bridged,ifname=en0,id=net0" if VIRTUALIZATION == "darwin" else "bridge,id=net0,br=br0"
+        mac_address = self._generate_mac_address()
+
+        # Enables TCP qemu monitor
+        monitor_chardev = f"socket,id=mon1,host=127.0.0.1,port=5555,server=on,wait=off"
+        monitor = "chardev=mon1,mode=readline"
 
         cmd = [
             "qemu-system-x86_64",
@@ -204,9 +254,11 @@ class QemuController:
             "-smp", str(self.cpu_count),
             "-m", f"{self.memory_allocated}M",
             "-hda", str(self.img_path),
-            "-netdev", "user,id=net0,hostfwd=tcp::2222-:22",
-            "-device", "virtio-net,netdev=net0",
-            "-monitor", "unix:/tmp/qemu.sock,server,nowait",
+            "-netdev", netdev,
+            "-device", f"virtio-net,netdev=net0,mac={mac_address}",
+            "-chardev", monitor_chardev,
+            "-mon", monitor,
+            "-serial", "mon:stdio", 
             "-fsdev", f"local,id=fsdev0,path={LOCAL_JOB_REPOSITORY_CACHE_PATH},security_model=none",
             "-device", "virtio-9p-pci,fsdev=fsdev0,mount_tag=jobcache",
             "-nographic"
@@ -214,16 +266,26 @@ class QemuController:
 
         if VIRTUALIZATION == "linux":
             cmd.append("-enable-kvm")
+        else:
+            cmd.insert(0, "sudo") # sudo is required for macos
+
         if loadvm:
             cmd.extend(["-loadvm", self.snapshot_name])
 
         return cmd 
     
+    def _generate_mac_address(self) -> str:
+        """
+        This is used to assign to qemu instance (in a flag) to ensure each vm instance
+        gets a unique ip address.
+        """
+        
+        # First byte: 0x02 = unicast + locally administered
+        mac = [0x02] + [random.randint(0x00, 0xFF) for _ in range(5)]
+        return ":".join(f"{b:02x}" for b in mac)
+
     def _start_qemu_no_loadvm(self) -> subprocess.Popen[str]:
         qemu_cmd = self._get_qemu_cmd()
-
-        if os.path.exists("/tmp/qemu.sock"):
-            os.remove("/tmp/qemu.sock")
 
         try:
             proc_qemu = subprocess.Popen(
@@ -236,57 +298,49 @@ class QemuController:
             
         except FileNotFoundError:
             raise RuntimeError("Qemu binary not found. Not installed?")
-    
-    def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str]): 
-        """
-        This wait the qemu monitor socket if its ready so that we can
-        connect to it and save the vm.
-        """
 
-        if wait_for_file_socket_availability("/tmp/qemu.sock"): 
+    def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str], host: str = "127.0.0.1", port: int = 5555, timeout: int = 10):
+        if wait_for_tcp_monitor(host=host, port=port, timeout=timeout):
             return
-
+        
+        # Read stderr if we failed to wait for tcp monitor
         try:
-            _, qemu_stderr = proc_qemu.communicate(timeout=5) 
+            _, qemu_stderr = proc_qemu.communicate(timeout=5)
         except subprocess.TimeoutExpired:
-            qemu_stderr = "Timeout reading Qemu stderr"
-        finally: 
+            qemu_stderr = "Timeout reading QEMU stderr"
+        finally:
             clean_process(proc_qemu)
 
-        raise RuntimeError(f"Qemu monitor socket failed to start in time. \nQemu stderr: {qemu_stderr}")
+        raise RuntimeError(f"QEMU TCP monitor failed to start in time.\nQEMU stderr: {qemu_stderr}")
 
-    def _send_command_to_qemu_monitor(self, file_socket: str, command: str, return_stdout: bool = False) -> Optional[str]:
-        """ 
-        Sends a qemu command to the qemu monitor socket by connecting to it using
-        socat. If return_stdout = True, it returns the stdout of the process.
+    def _send_command_to_qemu_monitor(self, command: str, host: str='127.0.0.1', timeout: float = 2.0) -> str:
         """
+        Sends a command to the QEMU monitor via TCP and returns the full output.
+        Raises RuntimeError on connection issues or decoding errors.
+        """
+        output = b""
+        try:
+            with socket.create_connection((host, 5555), timeout=timeout) as sock:
+                sock.sendall(f"{command}\n".encode())
+                sock.settimeout(timeout)
+                
+                while True:
+                    try:
+                        chunk = sock.recv(4096)
+                        if not chunk:
+                            break
+                        output += chunk
+                    except socket.timeout:
+                        break
+        except Exception as e:
+            raise RuntimeError(f"Failed to connect or communicate with QEMU monitor at {host}:{self.monitor_tcp_port}: {e}") from e
 
         try:
-            proc = subprocess.Popen(
-                ["socat", "-", f"unix-connect:{file_socket}"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True)
-        except FileNotFoundError:
-            raise RuntimeError("socat command not found. Is socat installed?")
-        except OSError as e:
-            raise RuntimeError("Failed to start socat") from e
+            return output.decode().strip()
+        except UnicodeDecodeError as e:
+            raise RuntimeError(f"Failed to decode QEMU monitor response: {e}") from e
 
-        try:
-            stdout, stderr = proc.communicate(input=f"{command}\n", timeout=10)
-        except subprocess.TimeoutExpired:
-            raise TimeoutError("socat timed out while sending command")
-        finally:
-            clean_process(proc=proc)
-        
-        if proc.returncode != 0:
-            raise RuntimeError(f"socat exited with error: {stderr.strip()}")
-        
-        if return_stdout:
-            return stdout.strip()
-        
-    def wait_for_ssh_connection(self, port:int=2222, user:str="root",password:str="root", timeout:int=60) -> None:
+    def wait_for_ssh_connection(self, user:str="root",password:str="root", timeout:int=60) -> None:
         """
         Poll SSH on localhost:port until authentication succeeds,
         meaning the server is ready for communication.
@@ -298,7 +352,7 @@ class QemuController:
         while (time.perf_counter() - start_time) < timeout:
             try:
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                self.ssh.connect("localhost", port=port, username=user, password=password, timeout=1)
+                self.ssh.connect(self.vm_ip, username=user, password=password, timeout=1)
                 self.ssh.close()
                 return
             except Exception:
@@ -312,7 +366,24 @@ class QemuController:
             self.run_command(command=["mount -t 9p -o trans=virtio jobcache /mnt/jobcache"])
         except Exception as e:
             raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
-    
+
+    def _listen_for_vm_ip(self, timeout: int=120) -> str:
+        PORT = 9999
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sock.bind(("", PORT))
+
+            start_time = time.perf_counter()
+            while (time.perf_counter() - start_time) < timeout:
+                data, _ = sock.recvfrom(1024)
+                try:
+                    msg = data.decode("utf-8").strip()
+                    return msg
+                except UnicodeDecodeError:
+                    continue
+        # socket auto-closed here
+        return ""
+
     def delete(self):
         ...
 
