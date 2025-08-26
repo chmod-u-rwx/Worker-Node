@@ -42,6 +42,7 @@ class WebsocketClientService:
         rediscoveries = 0
         
         while rediscoveries <= max_rediscoveries:
+            rediscoveries += 1
             for attempt in range(1, self.max_reconnect_attempts + 1):
                 try:
                     self.websocket = await websockets.connect(current_address)
@@ -51,19 +52,15 @@ class WebsocketClientService:
                 except ConnectionClosed:
                     if attempt == self.max_reconnect_attempts:
                         new_address = await self.discover_master_node()
-                    
                         if new_address != current_address:
                             current_address = new_address
-                            break # Break inner loop to restart with new address
-                        else:
-                            break # Break inner loop, rediscoveries will increment
+
+                        break 
                         
                 except Exception as e:
                     print(f"Unexpected error during WebSocket connection (attempt {attempt}): {e}")
-            
-            rediscoveries += 1
-
-        raise ConnectionError(f"Failed to connect after {max_reconnect_attempts} attempts")
+        else:
+            raise ConnectionError(f"Failed to connect after {max_reconnect_attempts} attempts")
     
     async def listen_for_messages(self) -> None:
         if not self.websocket:
