@@ -117,7 +117,8 @@ class QemuController:
         if self.status != QemuStatus.STARTED:
             raise RuntimeError("QEMU is not STARTED. Cannot run command.")
         
-        self.wait_for_ssh_connection()
+        if not (self.ssh.get_transport() and self.ssh.get_transport().is_active()): # type:ignore
+            self.wait_for_ssh_connection()
         
         self.status = QemuStatus.RUNNING
         cmd = " ".join(command)
@@ -125,9 +126,6 @@ class QemuController:
 
         while (time.perf_counter() - start_time) < timeout:
             try:
-                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                self.ssh.connect(self.vm_ip, username="root", password="root", timeout=1)
-
                 _, stdout, stderr = self.ssh.exec_command(cmd)
                 returncode = stdout.channel.recv_exit_status()
 
@@ -138,7 +136,6 @@ class QemuController:
                     returncode=returncode,
                     runtime=f"{(time.perf_counter() - start_time) * 1000:.2f} ms"
                 )        
-                self.status = QemuStatus.STARTED
                 return output
 
             except RuntimeError as e:
@@ -151,9 +148,8 @@ class QemuController:
                 error_buffer = f"Unexpected error: {str(e)}\n"
                 time.sleep(1)
             finally:
-                self.ssh.close()
+                self.status = QemuStatus.STARTED
 
-        self.status = QemuStatus.STARTED
         raise TimeoutError(f"Command execution timed out after {timeout} seconds. Last known error: {error_buffer}")
 
     def create_snapshot(self):
@@ -353,7 +349,6 @@ class QemuController:
             try:
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.ssh.connect(self.vm_ip, username=user, password=password, timeout=1)
-                self.ssh.close()
                 return
             except Exception:
                 time.sleep(0.05)
