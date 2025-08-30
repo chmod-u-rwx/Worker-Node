@@ -1,9 +1,9 @@
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect, QSize)
 from PySide6.QtGui import (QFont, QPixmap)
-from PySide6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QWidget)
+from PySide6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QWidget, QMainWindow)
 
 class Ui_signup_toDashboard(object):
-    def setupUi(self, disk_question):
+    def setupUi(self, disk_question: QMainWindow):
         if not disk_question.objectName():
             disk_question.setObjectName(u"disk_question")
         disk_question.resize(1440, 810)
@@ -104,7 +104,7 @@ class Ui_signup_toDashboard(object):
         QMetaObject.connectSlotsByName(disk_question)
     # setupUi
 
-    def retranslateUi(self, disk_question):
+    def retranslateUi(self, disk_question: QWidget):
         disk_question.setWindowTitle(QCoreApplication.translate("disk_question", u"CrowdCloud", None))
         self.logo.setText("")
         self.get_started.setText(QCoreApplication.translate("disk_question", u"Get Started with Us", None))

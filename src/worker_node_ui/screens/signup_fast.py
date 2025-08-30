@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtWidgets import QMainWindow
 from src.worker_node_ui.styles.signup_ui_py.signup_fast_ui import Ui_signup_toDashboard
 
@@ -10,14 +10,14 @@ class SignupToDashboardWindow(QMainWindow):
         self.ui = Ui_signup_toDashboard()
         self.ui.setupUi(self)
 
-        self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/signup1logo.png"))
+        self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/desk_logo.png"))
 
         self.seconds_left = 3
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_countdown)
         self.timer.start(1000)
 
-        self.ui.dashboard_button.clicked.connect(self.go_to_dashboard)
+        self.ui.dashboard_button.clicked.connect(self.controller.show_login)
 
         self.update_countdown_label()
 
@@ -30,8 +30,9 @@ class SignupToDashboardWindow(QMainWindow):
             self.update_countdown_label()
         else:
             self.timer.stop()
-            self.go_to_dashboard()
+            #self.controller.show_login()
 
-    def go_to_dashboard(self):
+    def go_to_login(self):
         if self.controller:
+            self.controller.show_login()
             self.close()

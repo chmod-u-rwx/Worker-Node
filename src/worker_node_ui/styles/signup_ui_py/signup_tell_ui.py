@@ -1,11 +1,11 @@
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect, QSize, Qt)
 from PySide6.QtGui import (QFont, QPixmap)
-from PySide6.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, QWidget)
+from PySide6.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QSlider, QWidget)
 
 class Ui_SignupTell(object):
-    def setupUi(self, tell_label):
+    def setupUi(self, tell_label: QMainWindow):
         if not tell_label.objectName():
-            tell_label.setObjectName(u"tell_label")
+                tell_label.setObjectName(u"tell_label")
         tell_label.resize(1440, 810)
         tell_label.setMinimumSize(QSize(1440, 810))
         tell_label.setMaximumSize(QSize(1440, 810))
@@ -35,10 +35,7 @@ class Ui_SignupTell(object):
         font.setPointSize(28)
         font.setBold(True)
         self.get_started.setFont(font)
-        self.get_started.setStyleSheet(u"background: transparent;\n"
-"color: white;\n"
-"\n"
-"")
+        self.get_started.setStyleSheet(u"background: transparent;\n""color: white;\n""\n""")
         self.create_label = QLabel(self.centralwidget)
         self.create_label.setObjectName(u"create_label")
         self.create_label.setGeometry(QRect(910, 140, 601, 31))
@@ -47,10 +44,7 @@ class Ui_SignupTell(object):
         font1.setPointSize(26)
         font1.setBold(True)
         self.create_label.setFont(font1)
-        self.create_label.setStyleSheet(u"background: transparent;\n"
-"color: white;\n"
-"\n"
-"")
+        self.create_label.setStyleSheet(u"background: transparent;\n""color: white;\n""\n""")
         self.next1_button = QPushButton(self.centralwidget)
         self.next1_button.setObjectName(u"next1_button")
         self.next1_button.setGeometry(QRect(1080, 590, 211, 41))
@@ -61,18 +55,16 @@ class Ui_SignupTell(object):
         font2.setItalic(False)
         self.next1_button.setFont(font2)
         self.next1_button.setStyleSheet(u"QPushButton {\n"
-"	font: bold 12pt \"Century Gothic\";\n"
-"    background-color: #00031F;   /* button fill color */\n"
-"    color: white;                /* text color */\n"
-"    border: 1px solid #340561;   /* stroke/border */\n"
-"    border-radius: 10px;         /* corner radius */\n"
-"    padding: 6px 12px;           /* optional padding */\n"
-"}\n"
-"QPushButton:hover {\n"
-"    background-color: #6A0DBF;   /* hover color */\n"
-"}\n"
-"\n"
-"")
+                "	font: bold 12pt \"Century Gothic\";\n"
+                "    background-color: #00031F;   /* button fill color */\n"
+                "    color: white;                /* text color */\n"
+                "    border: 1px solid #340561;   /* stroke/border */\n"
+                "    border-radius: 10px;         /* corner radius */\n"
+                "    padding: 6px 12px;           /* optional padding */\n"
+                "}\n"
+                "QPushButton:hover {\n"
+                "    background-color: #6A0DBF;   /* hover color */\n"
+                "}\n""\n""")
         self.cpu_label = QLabel(self.centralwidget)
         self.cpu_label.setObjectName(u"cpu_label")
         self.cpu_label.setGeometry(QRect(810, 280, 341, 16))
@@ -81,38 +73,31 @@ class Ui_SignupTell(object):
         font3.setPointSize(10)
         font3.setBold(False)
         self.cpu_label.setFont(font3)
-        self.cpu_label.setStyleSheet(u"color: white;\n"
-"background-color: transparent;\n"
-"")
+        self.cpu_label.setStyleSheet(u"color: white;\n""background-color: transparent;\n""")
         self.create_label_2 = QLabel(self.centralwidget)
         self.create_label_2.setObjectName(u"create_label_2")
         self.create_label_2.setGeometry(QRect(980, 180, 171, 31))
         self.create_label_2.setFont(font1)
-        self.create_label_2.setStyleSheet(u"background: transparent;\n"
-"color: white;\n"
-"\n"
-"")
+        self.create_label_2.setStyleSheet(u"background: transparent;\n""color: white;\n""\n""")
         self.cpu_slider = QSlider(self.centralwidget)
         self.cpu_slider.setObjectName(u"cpu_slider")
         self.cpu_slider.setGeometry(QRect(910, 330, 381, 21))
         self.cpu_slider.setStyleSheet(u"QSlider {\n"
-"    background: transparent;\n"
-"}\n"
-"\n"
-"QSlider::groove:horizontal {\n"
-"    border: 1px solid #999999;\n"
-"    height: 8px;\n"
-"    background: #D9D9D9;\n"
-"    border-radius: 4px;\n"
-"}\n"
-"\n"
-"QSlider::sub-page:horizontal {\n"
-"    background: #9C7DFF;   /* Violet filled part */\n"
-"    border: 1px solid #777777;\n"
-"    height: 8px;\n"
-"    border-radius: 4px;\n"
-"}\n"
-"\n"
+                "    background: transparent;\n"
+                "}\n"
+                "\n"
+                "QSlider::groove:horizontal {\n"
+                "    border: 1px solid #999999;\n"
+                "    height: 8px;\n"
+                "    background: #D9D9D9;\n"
+                "    border-radius: 4px;\n"
+                "}\n""\n"
+                "QSlider::sub-page:horizontal {\n"
+                "    background: #9C7DFF;   /* Violet filled part */\n"
+                "    border: 1px solid #777777;\n"
+                "    height: 8px;\n"
+                "    border-radius: 4px;\n"
+                "}\n""\n"
 "QSlider::add-page:horizontal {\n"
 "    background: #D9D9D9;   /* Unfilled part */\n"
 "    border: 1px solid #777777;\n"
@@ -136,21 +121,17 @@ class Ui_SignupTell(object):
 "")
         self.cpu_slider.setMaximum(100)
         self.cpu_slider.setValue(50)
-        self.cpu_slider.setOrientation(Qt.Horizontal)
+        self.cpu_slider.setOrientation(Qt.Horizontal) #type: ignore
         self.core_label = QLabel(self.centralwidget)
         self.core_label.setObjectName(u"core_label")
         self.core_label.setGeometry(QRect(810, 380, 341, 16))
         self.core_label.setFont(font3)
-        self.core_label.setStyleSheet(u"color: white;\n"
-"background-color: transparent;\n"
-"")
+        self.core_label.setStyleSheet(u"color: white;\n""background-color: transparent;\n""")
         self.ram_label = QLabel(self.centralwidget)
         self.ram_label.setObjectName(u"ram_label")
         self.ram_label.setGeometry(QRect(810, 480, 341, 16))
         self.ram_label.setFont(font3)
-        self.ram_label.setStyleSheet(u"color: white;\n"
-"background-color: transparent;\n"
-"")
+        self.ram_label.setStyleSheet(u"color: white;\n""background-color: transparent;\n""")
         self.back_button = QPushButton(self.centralwidget)
         self.back_button.setObjectName(u"back_button")
         self.back_button.setGeometry(QRect(840, 590, 221, 41))
@@ -211,9 +192,7 @@ class Ui_SignupTell(object):
         self.info_label.setObjectName(u"info_label")
         self.info_label.setGeometry(QRect(840, 650, 441, 16))
         self.info_label.setFont(font3)
-        self.info_label.setStyleSheet(u"color: white;\n"
-"background-color: transparent;\n"
-"")
+        self.info_label.setStyleSheet(u"color: white;\n""background-color: transparent;\n""")
         self.cores_max_label = QLabel(self.centralwidget)
         self.cores_max_label.setObjectName(u"cores_max_label")
         self.cores_max_label.setGeometry(QRect(1280, 410, 16, 21))
@@ -280,7 +259,7 @@ class Ui_SignupTell(object):
 "")
         self.cores_slider.setMaximum(100)
         self.cores_slider.setValue(50)
-        self.cores_slider.setOrientation(Qt.Horizontal)
+        self.cores_slider.setOrientation(Qt.Horizontal) #type: ignore
         self.cores_lineedit = QLineEdit(self.centralwidget)
         self.cores_lineedit.setObjectName(u"cores_lineedit")
         self.cores_lineedit.setGeometry(QRect(830, 410, 51, 41))
@@ -351,7 +330,7 @@ class Ui_SignupTell(object):
 "")
         self.ram_slider.setMaximum(100)
         self.ram_slider.setValue(50)
-        self.ram_slider.setOrientation(Qt.Horizontal)
+        self.ram_slider.setOrientation(Qt.Horizontal) #type:ignore
         self.ram_lineedit = QLineEdit(self.centralwidget)
         self.ram_lineedit.setObjectName(u"ram_lineedit")
         self.ram_lineedit.setGeometry(QRect(820, 510, 81, 41))
@@ -383,9 +362,8 @@ class Ui_SignupTell(object):
         self.retranslateUi(tell_label)
 
         QMetaObject.connectSlotsByName(tell_label)
-    # setupUi
 
-    def retranslateUi(self, tell_label):
+    def retranslateUi(self, tell_label: QWidget):
         tell_label.setWindowTitle(QCoreApplication.translate("tell_label", u"CrowdCloud", None))
         self.logo.setText("")
         self.get_started.setText(QCoreApplication.translate("tell_label", u"Get Started with Us", None))

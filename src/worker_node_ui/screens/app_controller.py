@@ -3,6 +3,7 @@ from src.worker_node_ui.screens.signup_create import SignupWindow
 from src.worker_node_ui.screens.signup_tell import SignupTellWindow
 from src.worker_node_ui.screens.signup_almost import SignupAlmostWindow
 from src.worker_node_ui.screens.signup_fast import SignupToDashboardWindow
+from src.worker_node_ui.screens.login import LoginWindow
 
 class AppController:
     def __init__(self):
@@ -26,3 +27,6 @@ class AppController:
 
     def show_signup_fast(self):
         self._switch_window(SignupToDashboardWindow)
+    
+    def show_login(self):
+        self._switch_window(LoginWindow)

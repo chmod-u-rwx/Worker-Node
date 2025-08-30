@@ -1,10 +1,10 @@
 from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, QSize
 from PySide6.QtGui import QFont, QPixmap
 from PySide6 import QtGui, QtCore
-from PySide6.QtWidgets import QLabel, QLineEdit, QPushButton, QWidget
+from PySide6.QtWidgets import QLabel, QLineEdit, QPushButton, QWidget, QMainWindow
 
 class Ui_signup_create(object):
-    def setupUi(self, signup_create):
+    def setupUi(self, signup_create: QMainWindow):
         if not signup_create.objectName():
             signup_create.setObjectName("signup_create")
         signup_create.resize(1440, 810)
@@ -82,7 +82,7 @@ class Ui_signup_create(object):
         self.email_field.setObjectName("email_field")
         self.email_field.setGeometry(QRect(810, 300, 451, 41))
         self.email_field.setFont(QFont("Segoe UI", 13))
-        self.email_field.setStyleSheet(lineedit_style)
+        self.email_field.setStyleSheet("QLineEdit { border: 1px solid white; background: #00031F; color: white; padding: 8px; border-radius: 10px; }")
 
         self.username_field = QLineEdit(self.centralwidget)
         self.username_field.setObjectName("username_field")
@@ -92,29 +92,22 @@ class Ui_signup_create(object):
         self.password_field = QLineEdit(self.centralwidget)
         self.password_field.setObjectName("password_field")
         self.password_field.setGeometry(QRect(810, 440, 451, 41))
-        self.password_field.setEchoMode(QLineEdit.Password)
+        self.password_field.setEchoMode(QLineEdit.EchoMode.Password) 
         self.password_field.setStyleSheet(lineedit_style)
 
         self.confpass_field = QLineEdit(self.centralwidget)
         self.confpass_field.setObjectName("confpass_field")
         self.confpass_field.setGeometry(QRect(810, 510, 451, 41))
-        self.confpass_field.setEchoMode(QLineEdit.Password)
+        self.confpass_field.setEchoMode(QLineEdit.EchoMode.Password)
         self.confpass_field.setStyleSheet(lineedit_style)
 
         # Buttons
         self.next_button = QPushButton(self.centralwidget)
         self.next_button.setObjectName("next_button")
         self.next_button.setGeometry(QRect(810, 580, 451, 41))
-        self.next_button.setFont(QFont("Century Gothic", 12, QFont.Bold))
-        self.next_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.next_button.setStyleSheet("""
-            QPushButton {
-                background-color: #7D5FFF;
-                color: white;
-                border: 2px solid #7D5FFF;
-                border-radius: 10px;
-                padding: 8px 16px;
-            }
+        self.next_button.setFont(QFont("Century Gothic", 12, QFont.Bold)) #type:ignore
+        self.next_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor)) #type:ignore
+        self.next_button.setStyleSheet("""QPushButton {background-color: #7D5FFF; color: white; border: 2px solid #7D5FFF; border-radius: 10px; padding: 8px 16px;}
             QPushButton:hover {
                 background-color: #9B7FFF;
                 border: 2px solid #9B7FFF;
@@ -144,25 +137,25 @@ class Ui_signup_create(object):
         font5 = QFont("Segoe UI", 9)
         self.email_label = QLabel(self.centralwidget)
         self.email_label.setObjectName("email_label")
-        self.email_label.setGeometry(QRect(820, 310, 91, 16))
+        self.email_label.setGeometry(QRect(820, 310, 78, 16))
         self.email_label.setFont(font5)
         self.email_label.setStyleSheet("color: white; background-color: transparent;")
 
         self.username = QLabel(self.centralwidget)
         self.username.setObjectName("username")
-        self.username.setGeometry(QRect(820, 380, 91, 16))
+        self.username.setGeometry(QRect(820, 380, 58, 16))
         self.username.setFont(font5)
         self.username.setStyleSheet("color: white; background-color: transparent;")
 
         self.password = QLabel(self.centralwidget)
         self.password.setObjectName("password")
-        self.password.setGeometry(QRect(820, 450, 91, 16))
+        self.password.setGeometry(QRect(820, 450, 54, 16))
         self.password.setFont(font5)
         self.password.setStyleSheet("color: white; background-color: transparent;")
 
         self.confpass = QLabel(self.centralwidget)
         self.confpass.setObjectName("confpass")
-        self.confpass.setGeometry(QRect(820, 520, 111, 16))
+        self.confpass.setGeometry(QRect(820, 520, 100, 16))
         self.confpass.setFont(font5)
         self.confpass.setStyleSheet("color: white; background-color: transparent;")
 
@@ -171,7 +164,7 @@ class Ui_signup_create(object):
         self.retranslateUi(signup_create)
         QMetaObject.connectSlotsByName(signup_create)
 
-    def retranslateUi(self, signup_create):
+    def retranslateUi(self, signup_create: QWidget):
         signup_create.setWindowTitle(QCoreApplication.translate("signup_create", "CrowdCloud", None))
         self.logo.setText("")
         self.get_started.setText(QCoreApplication.translate("signup_create", "Get Started with Us", None))

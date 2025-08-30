@@ -1,9 +1,9 @@
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect, QSize, Qt)
-from PySide6.QtGui import (QFont, QPixmap)
-from PySide6.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QPushButton, QSlider, QWidget)
+from PySide6.QtGui import (QFont, QPixmap )
+from PySide6.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QSizePolicy, QSlider, QWidget)
 
 class Ui_signup_almost(object):
-    def setupUi(self, disk_question):
+    def setupUi(self, disk_question: QMainWindow):
         if not disk_question.objectName():
             disk_question.setObjectName(u"disk_question")
         disk_question.resize(1440, 810)
@@ -14,8 +14,7 @@ class Ui_signup_almost(object):
         self.centralwidget.setEnabled(True)
         self.centralwidget.setMinimumSize(QSize(1440, 810))
         self.centralwidget.setMaximumSize(QSize(1440, 810))
-        self.centralwidget.setStyleSheet(
-            "background-image: url('src/worker_node_ui/resources/images/signin_background.png');")
+        self.centralwidget.setStyleSheet("background-image: url('src/worker_node_ui/resources/images/signin_background.png');")
         self.horizontalLayoutWidget = QWidget(self.centralwidget)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
         self.horizontalLayoutWidget.setGeometry(QRect(0, 0, 2, 2))
@@ -119,6 +118,11 @@ class Ui_signup_almost(object):
         self.cores_max_label = QLabel(self.centralwidget)
         self.cores_max_label.setObjectName(u"cores_max_label")
         self.cores_max_label.setGeometry(QRect(1235, 410, 61, 21))
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(3)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.cores_max_label.sizePolicy().hasHeightForWidth())
+        self.cores_max_label.setSizePolicy(sizePolicy)
         self.cores_max_label.setStyleSheet(u"QLabel {\n"
 "    font-size: 15px;\n"
 "    font-weight: bold;\n"
@@ -130,6 +134,8 @@ class Ui_signup_almost(object):
         self.cores_min_label = QLabel(self.centralwidget)
         self.cores_min_label.setObjectName(u"cores_min_label")
         self.cores_min_label.setGeometry(QRect(910, 410, 41, 21))
+        sizePolicy.setHeightForWidth(self.cores_min_label.sizePolicy().hasHeightForWidth())
+        self.cores_min_label.setSizePolicy(sizePolicy)
         self.cores_min_label.setStyleSheet(u"QLabel {\n"
 "    font-size: 15px;\n"
 "    font-weight: bold;\n"
@@ -141,6 +147,11 @@ class Ui_signup_almost(object):
         self.disk_slider = QSlider(self.centralwidget)
         self.disk_slider.setObjectName(u"disk_slider")
         self.disk_slider.setGeometry(QRect(910, 430, 381, 21))
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(3)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.disk_slider.sizePolicy().hasHeightForWidth())
+        self.disk_slider.setSizePolicy(sizePolicy1)
         self.disk_slider.setStyleSheet(u"QSlider {\n"
 "    background: transparent;\n"
 "}\n"
@@ -182,10 +193,15 @@ class Ui_signup_almost(object):
 "")
         self.disk_slider.setMaximum(100)
         self.disk_slider.setValue(50)
-        self.disk_slider.setOrientation(Qt.Horizontal)
+        self.disk_slider.setOrientation(Qt.Horizontal) #type:ignore
         self.disk_line = QLineEdit(self.centralwidget)
         self.disk_line.setObjectName(u"disk_line")
-        self.disk_line.setGeometry(QRect(830, 410, 51, 41))
+        self.disk_line.setGeometry(QRect(810, 410, 91, 41))
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy2.setHorizontalStretch(1)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.disk_line.sizePolicy().hasHeightForWidth())
+        self.disk_line.setSizePolicy(sizePolicy2)
         font4 = QFont()
         font4.setFamilies([u"Century Gothic"])
         self.disk_line.setFont(font4)
@@ -203,6 +219,11 @@ class Ui_signup_almost(object):
         self.reco_label = QLabel(self.centralwidget)
         self.reco_label.setObjectName(u"reco_label")
         self.reco_label.setGeometry(QRect(910, 450, 191, 16))
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.reco_label.sizePolicy().hasHeightForWidth())
+        self.reco_label.setSizePolicy(sizePolicy3)
         self.reco_label.setFont(font3)
         self.reco_label.setStyleSheet(u"color: #a2a1a1;\n"
 "background-color: transparent;\n"
@@ -226,6 +247,20 @@ class Ui_signup_almost(object):
 "    box-shadow: 0px 0px 8px #7D5FFF;\n"
 "}\n"
 "")
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setGeometry(QRect(900, 280, 91, 21))
+        self.pushButton.setStyleSheet(u"QPushButton {\n"
+"	font: bold pt \"Century Gothic\";\n"
+"    background-color: #00031F;   /* button fill color */\n"
+"    color: white;                /* text color */\n"
+"    border: 1px solid #340561;   /* stroke/border */\n"
+"    border-radius: 10px;         /* corner radius */   \n"
+"}\n"
+"QPushButton:hover {\n"
+"    background-color: #6A0DBF;   /* hover color */\n"
+"}\n"
+"")
         disk_question.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(disk_question)
@@ -233,7 +268,7 @@ class Ui_signup_almost(object):
         QMetaObject.connectSlotsByName(disk_question)
     # setupUi
 
-    def retranslateUi(self, disk_question):
+    def retranslateUi(self, disk_question:QWidget):
         disk_question.setWindowTitle(QCoreApplication.translate("disk_question", u"CrowdCloud", None))
         self.logo.setText("")
         self.get_started.setText(QCoreApplication.translate("disk_question", u"Get Started with Us", None))
@@ -250,5 +285,6 @@ class Ui_signup_almost(object):
         self.cache_line.setInputMask("")
         self.cache_line.setText("")
         self.cache_line.setPlaceholderText(QCoreApplication.translate("disk_question", u"/tmp/crowdcloud", None))
+        self.pushButton.setText(QCoreApplication.translate("disk_question", u"Browse", None))
     # retranslateUi
 

@@ -1,4 +1,5 @@
 from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QLabel, QLineEdit
 from src.worker_node_ui.styles.signup_ui_py.signup_create_ui import Ui_signup_create
 import re
@@ -10,7 +11,7 @@ class SignupWindow(QMainWindow):
         self.ui = Ui_signup_create()
         self.ui.setupUi(self)
 
-        self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/signup1logo.png"))
+        self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/desk_logo"".png"))
 
         self.setup_floating_labels()
         self.add_password_toggle(self.ui.password_field)
@@ -29,14 +30,17 @@ class SignupWindow(QMainWindow):
 
         anim = QtCore.QPropertyAnimation(label, b"pos", self)
         anim.setDuration(150)
-        anim.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
+        anim.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
+
+        bg_color = "#00031F"
 
         def float_up():
             anim.stop()
             anim.setStartValue(label.pos())
             anim.setEndValue(float_pos)
             anim.start()
-            label.setStyleSheet("color: #7D5FFF; background: transparent;")
+            label.setStyleSheet(f"""color: #7D5FFF; background: {bg_color}; padding: 0 4px;""")
+            label.adjustSize()
 
         def float_down():
             if not line_edit.text():
@@ -46,8 +50,19 @@ class SignupWindow(QMainWindow):
                 anim.start()
                 label.setStyleSheet("color: white; background: transparent;")
 
-        line_edit.focusInEvent = lambda event: (float_up(), QLineEdit.focusInEvent(line_edit, event))
-        line_edit.focusOutEvent = lambda event: (float_down(),QLineEdit.focusOutEvent(line_edit, event))
+        original_focus_in = line_edit.focusInEvent
+        def new_focus_in(event):
+            float_up()
+            original_focus_in(event)
+
+        original_focus_out = line_edit.focusOutEvent
+        def new_focus_out(event):
+            if not line_edit.text():
+                float_down()
+            original_focus_out(event)
+
+        line_edit.focusInEvent = new_focus_in
+        line_edit.focusOutEvent = new_focus_out
         line_edit.textChanged.connect(lambda text: float_up() if text else float_down())
 
     def add_password_toggle(self, line_edit):
@@ -56,7 +71,7 @@ class SignupWindow(QMainWindow):
         toggle_btn.setCheckable(True)
         toggle_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
-        frame_width = line_edit.style().pixelMetric(QtWidgets.QStyle.PM_DefaultFrameWidth)
+        frame_width = line_edit.style().pixelMetric(QtWidgets.QStyle.PixelMetric.PM_DefaultFrameWidth)
         toggle_btn.setStyleSheet("QToolButton { border: none; padding: 0px; }")
         toggle_btn.setFixedSize(20, 20)
         toggle_btn.move(
@@ -66,24 +81,24 @@ class SignupWindow(QMainWindow):
 
         toggle_btn.clicked.connect(lambda: self.toggle_password(toggle_btn, line_edit))
 
-        line_edit.setEchoMode(QtWidgets.QLineEdit.Password)
+        line_edit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
         line_edit.setTextMargins(0, 0, toggle_btn.width() + frame_width, 0)
 
     def toggle_password(self, button, line_edit):
         if button.isChecked():
             button.setIcon(QtGui.QIcon.fromTheme("view-visible"))
-            line_edit.setEchoMode(QtWidgets.QLineEdit.Normal)
+            line_edit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
         else:
             button.setIcon(QtGui.QIcon.fromTheme("view-hidden"))
-            line_edit.setEchoMode(QtWidgets.QLineEdit.Password)
+            line_edit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+    
+    def validate_email(self, email):
+        pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+        return re.match(pattern, email) is not None
 
     def setup_logic(self):
         self.ui.next_button.clicked.connect(self.handle_next)
         self.ui.login_button.clicked.connect(self.handle_login)
-
-    def validate_email(self, email):
-        pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        return re.match(pattern, email) is not None
 
     def handle_next(self):
         email = self.ui.email_field.text().strip()
@@ -107,4 +122,4 @@ class SignupWindow(QMainWindow):
         self.controller.show_signup_tell()
 
     def handle_login(self):
-        self.controller.show_signup_tell()
+        self.controller.show_login()

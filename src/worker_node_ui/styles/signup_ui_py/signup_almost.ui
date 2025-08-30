@@ -292,6 +292,12 @@ background-color: transparent;
       <height>21</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+      <horstretch>3</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <property name="styleSheet">
      <string notr="true">QLabel {
     font-size: 15px;
@@ -315,6 +321,12 @@ background-color: transparent;
       <height>21</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+      <horstretch>3</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <property name="styleSheet">
      <string notr="true">QLabel {
     font-size: 15px;
@@ -337,6 +349,12 @@ background-color: transparent;
       <width>381</width>
       <height>21</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <horstretch>3</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
     <property name="styleSheet">
      <string notr="true">QSlider {
@@ -392,11 +410,17 @@ QSlider::handle:horizontal {
    <widget class="QLineEdit" name="disk_line">
     <property name="geometry">
      <rect>
-      <x>830</x>
+      <x>810</x>
       <y>410</y>
-      <width>51</width>
+      <width>91</width>
       <height>41</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <horstretch>1</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
     <property name="font">
      <font>
@@ -429,6 +453,12 @@ QSlider::handle:horizontal {
       <width>191</width>
       <height>16</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
     <property name="font">
      <font>
@@ -482,6 +512,32 @@ QLineEdit:focus {
     </property>
     <property name="placeholderText">
      <string>/tmp/crowdcloud</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>900</x>
+      <y>280</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+    </property>
+    <property name="text">
+     <string>Browse</string>
     </property>
    </widget>
   </widget>

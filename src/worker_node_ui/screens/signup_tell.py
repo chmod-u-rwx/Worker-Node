@@ -1,6 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtWidgets import QMainWindow
 from src.worker_node_ui.styles.signup_ui_py.signup_tell_ui import Ui_SignupTell
+import psutil
 
 
 class SignupTellWindow(QMainWindow):
@@ -10,11 +11,49 @@ class SignupTellWindow(QMainWindow):
         self.ui = Ui_SignupTell()
         self.ui.setupUi(self)
 
-        self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/signup1logo.png"))
+        self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/desk_logo.png"))
 
-        self.ui.cpu_slider.setRange(0, 100)
-        self.ui.cores_slider.setRange(1, 8) 
-        self.ui.ram_slider.setRange(0, 1600)
+        self.total_cores = psutil.cpu_count(logical=False)
+        self.total_threads = psutil.cpu_count(logical=True)
+        self.total_ram = int(psutil.virtual_memory().total / (1024 * 1024))
+
+        self.ui.cpu_slider.setRange(1, 100)
+        self.ui.cores_slider.setRange(1, self.total_threads)
+        self.ui.ram_slider.setRange(256, self.total_ram)
+
+        self.setup_slider_ranges()
+
+    def setup_slider_ranges(self):
+        self.ui.cpu_slider.setRange(1, 100)
+        self.ui.cpu_min_label.setText("1%")
+        self.ui.cpu_max_label.setText("100%")
+        self.ui.cpu_min_label.adjustSize()
+        self.ui.cpu_max_label.adjustSize()
+
+        self.ui.cores_slider.setRange(1, self.total_threads)
+        self.ui.cores_min_label.setText("1")
+        self.ui.cores_max_label.setText(str(self.total_threads))
+        self.ui.cores_min_label.adjustSize()
+        self.ui.cores_max_label.adjustSize()
+
+        self.ui.ram_slider.setRange(256, self.total_ram)
+        self.ui.ram_min_label.setText("256 MB")
+        self.ui.ram_max_label.setText(f"{self.total_ram} MB")
+        self.ui.ram_min_label.adjustSize()
+        self.ui.ram_max_label.adjustSize()
+
+        self.ui.cpu_min_label.setText("1%")
+        self.ui.cpu_max_label.setText("100%")
+
+        self.ui.cores_min_label.setText("1")
+        self.ui.cores_max_label.setText(str(self.total_threads))
+
+        self.ui.ram_min_label.setText("256 MB")
+        self.ui.ram_max_label.setText(f"{self.total_ram} MB")
+
+        self.update_cpu_lineedit(self.ui.cpu_slider.value())
+        self.update_cores_lineedit(self.ui.cores_slider.value())
+        self.update_ram_lineedit(self.ui.ram_slider.value())
 
         self.apply_effects()
         self.setup_logic()
@@ -47,7 +86,7 @@ class SignupTellWindow(QMainWindow):
     def update_cpu_slider(self):
         try:
             value = int(self.ui.cpu_lineedit.text().replace("%", ""))
-            value = max(0, min(100, value))
+            value = max(1, min(100, value))
             self.ui.cpu_slider.setValue(value)
         except ValueError:
             pass
@@ -58,7 +97,7 @@ class SignupTellWindow(QMainWindow):
     def update_cores_slider(self):
         try:
             value = int(self.ui.cores_lineedit.text())
-            value = max(1, min(8, value))
+            value = max(1, min(self.total_threads, value))
             self.ui.cores_slider.setValue(value)
         except ValueError:
             pass
@@ -68,17 +107,13 @@ class SignupTellWindow(QMainWindow):
 
     def update_ram_slider(self):
         try:
-            value = int(self.ui.ram_lineedit.text().replace("MB", ""))
-            value = max(0, min(1600, value))
+            value = int(self.ui.ram_lineedit.text().replace("MB", "").strip())
+            value = max(256, min(self.total_ram, value))
             self.ui.ram_slider.setValue(value)
         except ValueError:
             pass
 
     def handle_next(self):
-        cpu = self.ui.cpu_slider.value()
-        cores = self.ui.cores_slider.value()
-        ram = self.ui.ram_slider.value()
-
         self.controller.show_signup_almost()
         self.close()
 
