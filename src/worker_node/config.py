@@ -14,5 +14,8 @@ if path_str is None:
     raise ValueError(f"LOCAL_JOB_REPOSITORY_CACHE_PATH not set")
 
 LOCAL_JOB_REPOSITORY_CACHE_PATH = Path(path_str)
+CACHE_SIZE_ALLOCATED = int(os.getenv("CACHE_SIZE_ALLOCATED") or "0")
+if CACHE_SIZE_ALLOCATED <= 0:
+    raise ValueError("CACHE_SIZE_ALLOCATED cannot be zero or lower")
 
 CORE_API_URI=os.getenv("CORE_API_URI")

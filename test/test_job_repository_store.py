@@ -1,3 +1,5 @@
+import json
+import shutil
 import pytest
 from unittest.mock import patch
 from uuid import uuid4
@@ -123,3 +125,23 @@ def test_exists_with_corruption(job_repo_db: JobRepositoryDatabase):
     bad_path.mkdir()
     with pytest.raises(ValueError):
         job_repo_db.exists(job_id)
+
+def test_get_job_files(job_repo_db: JobRepositoryDatabase):
+    job_id = uuid4()
+    file_name = "test.json"
+    job_path = job_repo_db.cache_path / str(job_id)
+    file_path =  job_path / file_name
+    try:
+        job_repo_db.ensure_directory_exist(job_path)
+
+        contents = {"test": "hello"}
+
+        with open(file_path, "w") as file:
+            file.write(json.dumps(contents))
+
+        with job_repo_db.get_file(job_id, file_name) as file:
+            file_contents = json.loads(file.read())
+            assert file_contents == contents
+    finally:
+        shutil.rmtree(job_path)
+
