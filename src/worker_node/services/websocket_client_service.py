@@ -1,11 +1,13 @@
 import json
 import httpx
+import websockets
+import asyncio
 from typing import Any, Dict, Optional
 from uuid import UUID
-import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 from src.worker_node.config import CORE_API_URI
 from src.worker_node.models.master_node import MasterNode
+from src.worker_node.models.payloads import WebsocketMessage, MessageType, JobRequestPayload, JobResponsePayload
 
 class MasterNodeDiscoveryError(Exception):
     ...
@@ -70,9 +72,14 @@ class WebsocketClientService:
             message: str | bytes = ""
             try:
                 message = await self.websocket.recv()
-                
                 data = json.loads(message)
                 print(f"Received JSON message: {data}")
+
+                # Serialize message
+                data = WebsocketMessage(**data)
+                if data.type == MessageType.JOB_REQUEST:
+                    await self.handle_job_rpc_request(JobRequestPayload(**data.payloads))
+
             except (ConnectionClosed, WebSocketException):
                 await self.disconnect()
                 await self.connect(self.max_reconnect_attempts)
@@ -83,8 +90,28 @@ class WebsocketClientService:
                 raise
             
         await self.disconnect()
+
+    async def handle_job_rpc_request(self, job_request: JobRequestPayload):
+
+        # Dummy simulation of running job in qemu controller
+        await asyncio.sleep(2)
+        dummy_payload = JobResponsePayload(
+            request_id=job_request.request_id,
+            status="ok",
+            result={"result": "some result"},
+            error=None,
+            meta={"meta": "Idk what meta is for"}
+        )
+
+        message = WebsocketMessage(
+            request_id=job_request.request_id,
+            type=MessageType.JOB_RESPONSE,
+            payloads=dummy_payload
+        )
+
+        await self.send_message(message=message)
     
-    async def send_message(self, message: Dict[str, Any]) -> None:
+    async def send_message(self, message: Dict[str, Any] | WebsocketMessage) -> None:
         if not self.websocket:
             raise RuntimeError("Not connected to WebSocket server")
         

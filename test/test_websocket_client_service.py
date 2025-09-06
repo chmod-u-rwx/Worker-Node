@@ -11,6 +11,7 @@ from src.worker_node.services.websocket_client_service import (
     MasterNodeInvalidResponse,
     MasterNodeDiscoveryError,
 )
+from src.worker_node.models.payloads import JobRequestPayload, MessageType, MethodEnum, WebsocketMessage
 
 @pytest.fixture
 def worker_id():
@@ -266,6 +267,44 @@ class TestListenForMessage:
                 mock_disconnect.assert_called()
                 mock_connect.assert_called_once_with(websocket_service.max_reconnect_attempts)
     
+    @pytest.mark.asyncio
+    async def test_listen_for_job_rpc_message(
+        self, 
+        websocket_service: WebsocketClientService, 
+        mock_websocket: AsyncMock, 
+        monkeypatch: pytest.MonkeyPatch
+    ):
+        request_id = uuid4()
+        job_request = JobRequestPayload(request_id=request_id, body={"body": "dummy"}, method=MethodEnum.GET)
+        msg = WebsocketMessage(
+        request_id=request_id,
+        type=MessageType.JOB_REQUEST,
+        payloads=job_request
+        )
+
+        websocket_service.websocket = mock_websocket
+        mock_websocket.recv.side_effect = [
+            json.dumps(msg.model_dump(mode="json")),
+            ConnectionClosed(None, None)
+        ]
+
+        payload: JobRequestPayload | None = None
+        async def mock_handle_job_rpc_request(request_payload: JobRequestPayload):
+            nonlocal payload
+            payload = request_payload
+
+        async def fake_disconnect():
+            websocket_service.websocket = None
+
+        monkeypatch.setattr(websocket_service, "handle_job_rpc_request", mock_handle_job_rpc_request)
+        monkeypatch.setattr(websocket_service, "disconnect", fake_disconnect)
+        monkeypatch.setattr(websocket_service, "connect", AsyncMock())
+
+        await websocket_service.listen_for_messages()
+
+        assert payload is not None
+        assert payload.request_id == request_id
+
     @pytest.mark.asyncio
     async def test_listen_for_message_websocket_exception(
         self,
