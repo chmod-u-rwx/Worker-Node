@@ -518,7 +518,7 @@ def test_send_http_request_to_vm(test_img: Path):
         time.sleep(2)
         response = qemu.send_http_request_to_vm(path="/", port=8000, method="GET")
 
-        assert "Hello from Alpine VM!" in response
+        assert "Hello from Alpine VM!" in response.stdout
     finally:
         if qemu:
             qemu.stop()
@@ -538,11 +538,6 @@ def test_send_http_request_to_vm_returns_http_error(test_img: Path):
         qemu.status = QemuStatus.RUNNING
 
         error_response = qemu.send_http_request_to_vm(path="/", port=8000, method="GET")
-        expected_response: dict[str, Any] = {
-            "error": "500 Server Error",
-            "type": "HTTPError",
-            "url": url,
-            "status_code": 500
-        }
 
-        assert error_response == expected_response
+        assert error_response.returncode == 500
+        assert error_response.stderr == "500 Server Error"
