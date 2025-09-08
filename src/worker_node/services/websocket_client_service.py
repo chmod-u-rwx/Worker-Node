@@ -97,12 +97,11 @@ class WebsocketClientService:
         await asyncio.sleep(2)
         dummy_payload = JobResponsePayload(
             request_id=job_request.request_id,
-            job_id=uuid4(),
+            job_id=job_request.job_id,
             master_id=uuid4(),
             worker_id=uuid4(),
-            status="ok",
-            result={"result": "some result"},
-            error=None,
+            status_code=200,
+            body={"result": "Im from worker node"},
             meta={"meta": "Idk what meta is for"}
         )
 
@@ -151,24 +150,26 @@ class WebsocketClientService:
         return self.websocket is not None
     
     async def discover_master_node(self) -> str:
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(f"{CORE_API_URI}/master-node/discover")
-                if response.status_code == 404:
-                    raise MasterNodeNotFound("Master node discovery endpoint returned 404 Not Found")
-                elif 500 <= response.status_code < 600:
-                    raise MasterNodeServerError(f"Master node discovery failed with status {response.status_code}")
-                response.raise_for_status()
-                master_node_data = response.json()
-                try:
-                    master_node = MasterNode(**master_node_data)
-                except Exception as e:
-                    raise MasterNodeInvalidResponse(f"Invalid master node data: {e}")
+        # async with httpx.AsyncClient() as client:
+        #     try:
+        #         response = await client.get(f"{CORE_API_URI}/master-node/discover")
+        #         if response.status_code == 404:
+        #             raise MasterNodeNotFound("Master node discovery endpoint returned 404 Not Found")
+        #         elif 500 <= response.status_code < 600:
+        #             raise MasterNodeServerError(f"Master node discovery failed with status {response.status_code}")
+        #         response.raise_for_status()
+        #         master_node_data = response.json()
+        #         try:
+        #             master_node = MasterNode(**master_node_data)
+        #         except Exception as e:
+        #             raise MasterNodeInvalidResponse(f"Invalid master node data: {e}")
                 
-                master_address = str(master_node.master_address)
-            except httpx.RequestError as e:
-                raise MasterNodeDiscoveryError(f"HTTP request failed: {e}") from e
+        #         master_address = str(master_node.master_address)
+        #     except httpx.RequestError as e:
+        #         raise MasterNodeDiscoveryError(f"HTTP request failed: {e}") from e
             
-            websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
+            websocket_url = f"ws://0.0.0.0:8020/ws/connect/{self.worker_id}"
             print(f"Discovered master node websocket at: {websocket_url}")
             return websocket_url
+        
+worker_ws_client = WebsocketClientService(UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
