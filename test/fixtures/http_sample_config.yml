@@ -1,0 +1,33 @@
+project:
+  name: "http_sample_project"
+  description: "Sample project to test serverless runtime config"
+  version: "0.1.0"
+  owner: "your-team-name"
+
+run:
+  runtime: "python"
+  file: "main.py"
+  args:
+    --sample: args
+  timeout: 30
+  cpu: 2
+  memory: 256
+
+input:
+  type: http # or args or stdin or file
+  allowed_routes: ["/process"]
+  allowed_methods: ["GET", "POST"]
+  health_check: "/health"
+
+output:
+  type: http
+
+error:
+  type: http
+
+error_map:
+  "0": 200 # Success
+  "1": 400 # Invalid args
+  "2": 500 # Internal server error
+  default: 500 # fallback if unmapped
+

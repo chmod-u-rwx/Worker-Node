@@ -131,3 +131,22 @@ def test_fetch_job_information_request_exception(_, service: LocalJobCacheServic
 def test_fetch_job_information_unexpected(_, service: LocalJobCacheService, sample_job: Job):
     with pytest.raises(RuntimeError, match="unexpected error"):
         service.fetch_job_information(sample_job.job_id)
+
+
+
+@pytest.mark.parametrize("config_path", [
+    "./test/fixtures/bin_sample_config.yml",
+    "./test/fixtures/file_sample_config.yml",
+    "./test/fixtures/http_sample_config.yml",
+])
+@patch("src.worker_node.services.local_job_cache_service.JobRepositoryDatabase")
+def test_get_job_configuration_success(repository: MagicMock, service: LocalJobCacheService, config_path: str):
+    job_id = uuid4()
+
+    config_file = open(config_path)
+    service.job_repository_db.get_file.return_value.__enter__.return_value = config_file # type: ignore
+    
+    config = service.get_job_configuration(job_id)
+    assert config
+
+   

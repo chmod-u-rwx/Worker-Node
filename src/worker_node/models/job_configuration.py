@@ -1,10 +1,15 @@
-from typing import Any, Literal
+from enum import Enum
+from typing import Annotated, Any, Optional
+from typing import Union
 from pydantic import BaseModel, Field
 
-class SupportedRuntimes():
+from .io_types import HttpInput, BinaryInput, FileInput, Output, Error
+
+class SupportedRuntimes(Enum):
     PYTHON = "python"
     NODE = "node"
     DOTNET = "dotnet"
+
 
 class ProjectDetails(BaseModel):
     name: str = Field(...)  
@@ -13,22 +18,22 @@ class ProjectDetails(BaseModel):
     owner: str = Field(...)  
 
 class RunDetails(BaseModel):
-    runtime: Literal["python", "npm", "dotnet"] = Field()
-    file: str = Field()
-    args: dict[Any, Any]= Field() 
-    timeout: int = Field()
-    cpu: int = Field()
-    memory: int = Field()
+    runtime: SupportedRuntimes = Field(...)
+    file: str = Field(...)
+    args: Optional[dict[Any, Any]]= Field(default=None) 
+    timeout: int = Field(...)
+    cpu: int = Field(...)
+    memory: int = Field(...)
 
-class BaseInput(BaseModel):
-    type: Literal["file", "http", "bin"] = Field(...)
-
-class HttpInput(BaseInput):
-    allowed_routes: list[str] = Field(...)
-    allowed_methods: list[str] = Field(...)
-    health_check: str = Field(...)
-    
+InputType = Annotated[ 
+    Union[HttpInput, BinaryInput, FileInput],
+    Field(discriminator="type")
+]
 
 class JobConfiguration(BaseModel):
     project: ProjectDetails = Field(...)
     run: RunDetails = Field(...)
+    input: InputType = Field(...)
+    output: Output = Field(...)
+    error: Error = Field(...)
+    error_map: dict[str, int] = Field(...)
