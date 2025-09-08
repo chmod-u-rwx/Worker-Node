@@ -25,6 +25,9 @@ class WebsocketMessage(BaseModel):
 
 class JobRequestPayload(BaseModel):
     request_id: UUID = Field(...)
+    job_id: UUID = Field(...)
+    master_id: UUID = Field(...)
+    worker_id: UUID = Field(...)
     method: Optional[MethodEnum] = Field(None, description="HTTP method")
     headers: Optional[Dict[str, Any]] = Field(default_factory=dict, description="HTTP headers")
     params: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Query parameters")
@@ -32,6 +35,9 @@ class JobRequestPayload(BaseModel):
 
 class JobResponsePayload(BaseModel):
     request_id: UUID = Field(...)
+    job_id: UUID = Field(...)
+    master_id: UUID = Field(...)
+    worker_id: UUID = Field(...)
     status: str = Field(..., description='"ok" or "error"')
     result: Dict[str, Any] = Field(default_factory=dict, description="User's actual output in JSON")
     error: Optional[str] = Field(None, description="Error details if status='error'")

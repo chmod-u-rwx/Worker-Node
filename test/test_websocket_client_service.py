@@ -275,7 +275,14 @@ class TestListenForMessage:
         monkeypatch: pytest.MonkeyPatch
     ):
         request_id = uuid4()
-        job_request = JobRequestPayload(request_id=request_id, body={"body": "dummy"}, method=MethodEnum.GET)
+        job_request = JobRequestPayload(
+            request_id=request_id,
+            job_id=uuid4(),
+            worker_id=uuid4(),
+            master_id=uuid4(), 
+            body={"body": "dummy"}, 
+            method=MethodEnum.GET
+            )
         msg = WebsocketMessage(
         request_id=request_id,
         type=MessageType.JOB_REQUEST,

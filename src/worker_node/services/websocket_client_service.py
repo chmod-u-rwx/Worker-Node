@@ -3,7 +3,7 @@ import httpx
 import websockets
 import asyncio
 from typing import Any, Dict, Optional
-from uuid import UUID
+from uuid import uuid4, UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
 from src.worker_node.config import CORE_API_URI
 from src.worker_node.models.master_node import MasterNode
@@ -97,6 +97,9 @@ class WebsocketClientService:
         await asyncio.sleep(2)
         dummy_payload = JobResponsePayload(
             request_id=job_request.request_id,
+            job_id=uuid4(),
+            master_id=uuid4(),
+            worker_id=uuid4(),
             status="ok",
             result={"result": "some result"},
             error=None,
