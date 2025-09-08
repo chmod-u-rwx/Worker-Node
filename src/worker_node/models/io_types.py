@@ -14,6 +14,7 @@ class BaseIO(BaseModel):
 
 class HttpInput(BaseIO):
     type: Literal["http"] # pyright: ignore[reportIncompatibleVariableOverride]
+    port: int = Field(...)
     allowed_routes: list[str] = Field(...)
     allowed_methods: list[str] = Field(...)
     health_check: str = Field(...)

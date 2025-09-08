@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 import requests
 import yaml
@@ -81,3 +82,13 @@ class LocalJobCacheService:
             config_dict: dict[Any, Any] = yaml.safe_load(config_file)
             config = JobConfiguration(**config_dict)
             return config
+    
+    def create_file(self, job_id: UUID4, file_name: str, contents: Any = "") -> Path:
+        with self.job_repository_db.get_file(job_id, file_name, "w") as input_file:
+            input_file.write(contents)
+
+            return self.job_repository_db.cache_path / str(job_id) / file_name
+    
+    def delete_file(self, job_id: UUID4, file_name: str):
+        path = self.job_repository_db.delete_file(job_id, file_name)
+        return path

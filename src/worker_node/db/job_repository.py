@@ -35,6 +35,13 @@ class JobRepositoryDatabase:
         file = open(file_path, mode=mode)
         return file
 
+    def delete_file(self, job_id: UUID, file_name: str):
+        job_root_path = self.get_job_root_path(job_id)
+        file_path = job_root_path / file_name
+
+        os.remove(file_path)
+        return file_path
+
     def exists(self, job_id: UUID) -> bool:
         job_root_path = self.get_job_root_path(job_id)
         if not job_root_path.exists():

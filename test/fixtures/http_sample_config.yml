@@ -18,6 +18,7 @@ input:
   allowed_routes: ["/process"]
   allowed_methods: ["GET", "POST"]
   health_check: "/health"
+  port: 8000
 
 output:
   type: http
