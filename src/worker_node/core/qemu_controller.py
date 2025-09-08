@@ -72,7 +72,7 @@ class QemuController:
             raise RuntimeError(f"An unexpected error occurred: {str(e)}")
     
     def stop(self):
-        if self.status != QemuStatus.STARTED:
+        if self.status != QemuStatus.STARTED and self.status != QemuStatus.RUNNING:
             raise RuntimeError("QEMU is not STARTED")
 
         if self.proc:
@@ -112,7 +112,7 @@ class QemuController:
         except (RuntimeError, TimeoutError) as e:
             raise RuntimeError("Failed to resume vm") from e
         
-    def run_command(self, command:List[str], timeout:int = 30) -> VMOutput:
+    def run_command(self, command:List[str], timeout:int = 30, isHttp: bool = False) -> VMOutput:
         start_time = time.perf_counter()
         if self.status != QemuStatus.STARTED:
             raise RuntimeError("QEMU is not STARTED. Cannot run command.")
@@ -148,7 +148,8 @@ class QemuController:
                 error_buffer = f"Unexpected error: {str(e)}\n"
                 time.sleep(1)
             finally:
-                self.status = QemuStatus.STARTED
+                if not isHttp: # if isHttp run_command will return and self.status == RUNNING
+                    self.status = QemuStatus.STARTED
 
         raise TimeoutError(f"Command execution timed out after {timeout} seconds. Last known error: {error_buffer}")
 
@@ -174,7 +175,7 @@ class QemuController:
                                 headers: Optional[dict[str, str]] = None, 
                                 ) -> Any:
 
-        if not self.status != QemuStatus.RUNNING:
+        if self.status != QemuStatus.RUNNING:
             raise RuntimeError("Qemu has not yet started.") 
 
         url = f"http://{self.vm_ip}:{port}{path}"
