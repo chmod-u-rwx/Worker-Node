@@ -173,7 +173,7 @@ class QemuController:
                                 query_params: Optional[dict[str, Any]] = None,
                                 body: Optional[dict[str, Any]] = None,  
                                 headers: Optional[dict[str, str]] = None, 
-                                ) -> Any:
+                                ) -> VMOutput:
 
         if self.status != QemuStatus.RUNNING:
             raise RuntimeError("Qemu has not yet started.") 
@@ -194,17 +194,28 @@ class QemuController:
 
             # useful if server doesnt return json response
             try:
-                return response.json()
+                return VMOutput(
+                    stdout=response.json(),
+                    returncode=response.status_code
+                )
             except ValueError:
-                return response.text
+                return VMOutput(
+                    stdout=response.text,
+                    returncode=response.status_code
+                )
+                # return response.text
             
         except requests.RequestException as e:
-            return {
-                "error": str(e),
-                "type": type(e).__name__,
-                "url": getattr(e.request, "url", None),
-                "status_code": getattr(getattr(e, "response", None), "status_code", None)
-            }
+            # return {
+            #     "error": str(e),
+            #     "type": type(e).__name__,
+            #     "url": getattr(e.request, "url", None),
+            #     "status_code": getattr(getattr(e, "response", None), "status_code", None)
+            # }
+            return VMOutput(
+                stderr=str(e),
+                returncode=getattr(getattr(e, "response", None), "status_code", -1)
+            )
 
     def get_resource_load(self) -> QemuLoad:
         if self.status != QemuStatus.STARTED:
