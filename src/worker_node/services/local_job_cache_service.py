@@ -1,10 +1,15 @@
+from pathlib import Path
+from typing import Any
 import requests
+import yaml
 
 from pydantic import UUID4
+
 
 from ..exceptions import AlreadyExists
 from ..db.job_metadata import JobMetadataDatabase
 from ..db.job_repository import JobRepositoryDatabase
+from ..models.job_configuration import JobConfiguration
 from ..models.job import Job
 from ..config import CORE_API_URI
 
@@ -70,3 +75,20 @@ class LocalJobCacheService:
             raise RuntimeError(f"Fetching job information failed request failed: {e}")
         except Exception as e:
             raise RuntimeError(f"Fetching job information failed unexpected error occurrred: {e}")
+    
+    def get_job_configuration(self, job_id: UUID4) -> JobConfiguration:
+        CROWD_CLOUD_CONFIG_FILE_NAME = "crowdcloud.yml"
+        with self.job_repository_db.get_file(job_id, CROWD_CLOUD_CONFIG_FILE_NAME) as config_file:
+            config_dict: dict[Any, Any] = yaml.safe_load(config_file)
+            config = JobConfiguration(**config_dict)
+            return config
+    
+    def create_file(self, job_id: UUID4, file_name: str, contents: Any = "") -> Path:
+        with self.job_repository_db.get_file(job_id, file_name, "w") as input_file:
+            input_file.write(contents)
+
+            return self.job_repository_db.cache_path / str(job_id) / file_name
+    
+    def delete_file(self, job_id: UUID4, file_name: str):
+        path = self.job_repository_db.delete_file(job_id, file_name)
+        return path

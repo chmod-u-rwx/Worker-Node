@@ -1,0 +1,126 @@
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
+from uuid import uuid4
+
+import yaml
+import pytest
+
+from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, JobRequestPayload
+from src.worker_node.models.messages import MethodEnum
+
+
+@pytest.fixture
+def executor() -> JobExecutor:
+    exec = JobExecutor()
+    return exec
+
+def get_config(path: Path | str):
+    with open(path) as file:
+        config_dict = yaml.safe_load(file)
+        config = JobConfiguration(**config_dict)
+    return config
+
+    
+
+@pytest.fixture
+def sample_job_bin_configuration() -> JobConfiguration:
+    config = get_config("./test/fixtures/bin_sample_config.yml")
+    return config
+
+@pytest.fixture
+def sample_job_http_configuration() -> JobConfiguration:
+    config = get_config("./test/fixtures/http_sample_config.yml")
+    return config
+
+@pytest.fixture
+def sample_job_file_configuration() -> JobConfiguration:
+    config = get_config("./test/fixtures/file_sample_config.yml")
+    return config
+
+@pytest.fixture
+def sample_job_request() -> JobRequestPayload:
+    request = JobRequestPayload(request_id=uuid4(),
+                                job_id=uuid4(),
+                                path="hello",
+                                method=MethodEnum.GET, 
+                                params={"qty": 2},
+                                body="hello"
+                                
+                                )
+    return request
+
+@pytest.fixture
+def job_configuration(request: Any):
+    return request.getfixturevalue(request.param)
+
+def test_run_job_success(executor: JobExecutor, sample_job_request: JobRequestPayload, sample_job_bin_configuration: JobConfiguration, sample_job_file_configuration: JobConfiguration, sample_job_http_configuration: JobConfiguration):
+    with patch("src.worker_node.core.job_executor.qemu_pool.session", new=MagicMock()) as mock_qemu:
+        executor.local_job_cache.cache_job = lambda job_id: None
+        executor.local_job_cache.get_job_configuration = lambda job_id: sample_job_bin_configuration
+        executor.run_job(sample_job_request)
+        mock_qemu.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "job_configuration, expected_output",
+    [
+        ("sample_job_bin_configuration", "sh -c echo \"hello\" | python main.py --sample args --qty 2"),
+        ("sample_job_file_configuration", "python main.py --sample args"),
+        ("sample_job_http_configuration", "setsid python main.py --sample args > /dev/null 2>&1 < /dev/null &"),
+    ],
+    indirect=["job_configuration"],  # tells pytest to resolve these as fixtures
+)
+def test_build_run_command_bin(job_configuration: JobConfiguration, expected_output: str, executor: JobExecutor, sample_job_request: JobRequestPayload):
+    command = executor.build_run_command(job_configuration, sample_job_request)
+    assert " ".join(command) == expected_output
+
+
+def test_parse_args(executor: JobExecutor):
+    allowed_args = ["--qty", "-v", "--isTrue"] 
+    input_args: dict[Any, Any] = {
+        "qty": 3,
+        "v": "Hello",
+        "isTrue": True
+    }
+
+    args_string = executor.parse_input_args(allowed_args, input_args)
+
+    assert args_string == "--qty 3 -v Hello --isTrue True"
+
+def test_parse_args_ignore_not_allowed(executor: JobExecutor):
+    allowed_args = ["--qty", "-v", "--isTrue"] 
+    input_args: dict[Any, Any] = {
+        "qty": 3,
+        "v": "Hello",
+        "isTrue": True,
+        "ignore": "bad data"
+    }
+
+    args_string = executor.parse_input_args(allowed_args, input_args)
+
+    assert args_string == "--qty 3 -v Hello --isTrue True"
+
+
+@pytest.mark.parametrize("status_code, expected", [
+    (1, 400),
+    (2, 500),
+    (999, 500), # Should be caught by default state
+    (-1000, 500)
+])
+def test_parse_status_code(status_code: int, expected: int, executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
+    error_map = sample_job_bin_configuration.error_map
+
+    result = executor.parse_status_code(error_map, status_code)
+    assert result == expected
+
+def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
+    error_map = sample_job_bin_configuration.error_map
+    del error_map["default"]
+    status_code = 100
+
+    status_code = executor.parse_status_code(error_map, status_code)
+    assert status_code  == 500 # should default to 500 even if no default mappint provided
+
+
+

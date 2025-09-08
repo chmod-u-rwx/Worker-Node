@@ -15,7 +15,7 @@ from ..helpers.process import clean_process
 from ..helpers.socket import wait_for_tcp_monitor, get_free_port
 from ..config import BASE_IMG_FILE, VIRTUALIZATION, LOCAL_JOB_REPOSITORY_CACHE_PATH
 from ..models.vm_output import VMOutput
-import paramiko
+import paramiko 
 
 class QemuStatus(Enum):
     STARTED = 1

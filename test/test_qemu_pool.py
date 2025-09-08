@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError, QemuCleaned
 from src.worker_node.config import MAX_MEMORY_ALLOCATED, MAX_CPU_COUNT_ALLOCATED
 from src.worker_node.core.qemu_controller import QemuStatus
@@ -87,5 +87,15 @@ def test_qemu_empty_warm_queue():
         while len(pool.warm_queue) >= 0:
             pool.acquire()
 
+def test_qemu_pool_session():
+    pool = QemuPool()
+    pool.acquire = MagicMock()
+    pool.release = MagicMock()
+    with pool.session() as qemu:
+        print(qemu)
+    
+    pool.acquire.assert_called_once()
+    pool.release.assert_called_once()
+    
 
 

@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from pathlib import Path
 import time
 from .qemu_controller import QemuController
@@ -31,6 +32,15 @@ class QemuPool:
             raise QemuCleaned()
         
         raise NotImplementedError("Not yet implemented")
+
+    @contextmanager
+    def session(self):
+        qemu = self.acquire()
+        try:
+            yield qemu
+        finally:
+            qemu.reset()
+            self.release(qemu)
     
     def acquire(self ) -> QemuController:
         if self.is_cleaned == True:
@@ -94,6 +104,5 @@ class QemuPool:
             path = Path("./test/path") # update this
             qemu = QemuController(path, "linux", 1, memory_per_machine)
             self.warm_queue.append(qemu)
-     
 
 qemu_pool = QemuPool()
