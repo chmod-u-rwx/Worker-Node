@@ -5,4 +5,4 @@ class VMOutput(BaseModel):
     stdout: str = ""
     stderr: str = ""
     returncode: int = -1
-    runtime: str = ""
+    runtime: float = 0

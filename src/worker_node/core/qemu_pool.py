@@ -39,6 +39,7 @@ class QemuPool:
         try:
             yield qemu
         finally:
+            qemu.reset()
             self.release(qemu)
     
     def acquire(self ) -> QemuController:

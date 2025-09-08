@@ -34,7 +34,7 @@ class JobRequestPayload(BaseModel):
 
 class JobResponsePayload(BaseModel):
     request_id: UUID = Field(...)
-    status: str = Field(..., description='"ok" or "error"')
-    result: Dict[str, Any] = Field(default_factory=dict, description="User's actual output in JSON")
-    error: Optional[str] = Field(None, description="Error details if status='error'")
+    status_code: int = Field(...)
+    body: Any = Field(default_factory=dict, description="Output may be error or not")
+    headers: Dict[str, Any] = Field(default_factory=dict)
     meta: Dict[str, Any] = Field(default_factory=dict)

@@ -3,58 +3,75 @@ from ..models.job_configuration import JobConfiguration
 from .qemu_pool import qemu_pool
 from ..services.local_job_cache_service import LocalJobCacheService
 from ..config import CACHE_SIZE_ALLOCATED
-from ..models.messages import JobRequestPayload
+from ..models.messages import JobRequestPayload, JobResponsePayload
 
 class JobExecutor():
     def __init__(self) -> None:
         self.local_job_cache = LocalJobCacheService(CACHE_SIZE_ALLOCATED)
 
     def run_job(self, request: JobRequestPayload):
-        self.local_job_cache.cache_job(request.job_id)
+        try:
+            self.local_job_cache.cache_job(request.job_id)
 
-        config = self.local_job_cache.get_job_configuration(request.job_id)
+            config = self.local_job_cache.get_job_configuration(request.job_id)
 
-        run_command = self.build_run_command(config, request)
-        
-        with qemu_pool.session() as qemu:
-            if config.input.type == "bin":
-                output = qemu.run_command(run_command)
-            elif config.input.type == "file":
-                self.local_job_cache.create_file(request.job_id, config.input.path, request.model_dump(mode="json"))
-                output = qemu.run_command(run_command)
-            elif config.input.type == "http":
-                qemu.run_command(run_command)
-                assert request.method
-                output = qemu.send_http_request_to_vm(request.method.value, request.path, config.input.port, request.params, request.body, request.headers)
-            else:
-                raise Exception("Unsupported Type")
+            run_command = self.build_run_command(config, request)
             
-            qemu.reset()
+            with qemu_pool.session() as qemu:
+                if config.input.type == "bin":
+                    output = qemu.run_command(run_command)
+                elif config.input.type == "file":
+                    self.local_job_cache.create_file(request.job_id, config.input.path, request.model_dump(mode="json"))
+                    output = qemu.run_command(run_command)
+                elif config.input.type == "http":
+                    qemu.run_command(run_command)
+                    assert request.method
+                    output = qemu.send_http_request_to_vm(request.method.value, request.path, config.input.port, request.params, request.body, request.headers)
+                else:
+                    raise Exception("Unsupported Type")
+            
+            status_code = self.parse_status_code(config.error_map, output.returncode)
+            is_error = self.is_error(status_code)
+            body = output.stderr if is_error else output.stdout
+            meta: dict[Any, Any] = {"stdin": output.stdin, "runtime": output.runtime}
+
+            response = JobResponsePayload(request_id=request.request_id, status_code=status_code, body=body, meta=meta)
+            return response
+        except Exception as e:
+            response = JobResponsePayload(request_id=request.request_id, status_code=500, body=str(e))
+            return response
+
+    def parse_status_code(self, error_map: dict[Any, Any], return_code: int) -> int:
+        return int(error_map.get(str(return_code), error_map.get("default", 500)))
     
-        return output
-    
+    def is_error(self, return_code: int) -> bool:
+        return 400 <= return_code <= 599
+
     def build_run_command(self, config: JobConfiguration, request: JobRequestPayload) -> list[str]:
-        run_command = ""
+        cmd: list[str] = []
 
         if config.input.type == "http":
-            run_command += "setsid "
+            cmd.append("setsid")
 
         if config.input.type == "bin":
-            run_command += f"echo \"{str(request.body)}\" | "
+            cmd.extend(["sh", "-c", f"echo \"{str(request.body)}\" |"])
 
-        run_command += f"{config.run.runtime.value} {config.run.file} "
+        cmd.append(config.run.runtime.value)
+        cmd.append(config.run.file)
+
         if config.run.args:
-            args_string = " ".join([f"{k} {v}" for k,v in config.run.args.items()])
-            run_command += args_string
+            for k, v in config.run.args.items():
+                cmd.extend([k, str(v)])
 
         if config.input.type == "bin" and request.params is not None:
             args_string = self.parse_input_args(config.input.allowed_args, request.params)
-            run_command += " " + args_string
-        
-        if config.input.type == "http":
-            run_command += " > /dev/null 2>&1 < /dev/null &"
+            if args_string:
+                cmd.extend(args_string.split(" "))
 
-        return run_command.split(" ")
+        if config.input.type == "http":
+            cmd.extend([">", "/dev/null", "2>&1", "<", "/dev/null", "&"])
+
+        return cmd
 
     def parse_input_args(self, allowed_args: list[str], input_args: Dict[str, Any]) -> str:
         args_string = ""
