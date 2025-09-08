@@ -1,11 +1,13 @@
 {
     "python.testing.pytestArgs": [
-        "test"
+        "test",
+        "--cov=src"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.analysis.typeCheckingMode": "strict",
     "python.analysis.extraPaths": [
         "./src/worker_node"
-    ]
+    ],
+    "python-envs.pythonProjects": []
 }
