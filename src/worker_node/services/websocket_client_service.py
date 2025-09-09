@@ -113,7 +113,7 @@ class WebsocketClientService:
 
         await self.send_message(message=message)
     
-    async def send_message(self, message: Dict[str, Any] | WebsocketMessage) -> None:
+    async def send_message(self, message: WebsocketMessage) -> None:
         if not self.websocket:
             raise RuntimeError("Not connected to WebSocket server")
         
@@ -122,7 +122,7 @@ class WebsocketClientService:
         
         while current_attempts < max_send_attempts:
             try:
-                await self.websocket.send(json.dumps(message))
+                await self.websocket.send(json.dumps(message.model_dump(mode="json")))
                 print(f"Sent message: {message}")
                 return
             
