@@ -134,7 +134,7 @@ class QemuController:
                     stdout=stdout.read().decode("utf-8"),
                     stderr=stderr.read().decode("utf-8"),
                     returncode=returncode,
-                    runtime=f"{(time.perf_counter() - start_time) * 1000:.2f} ms"
+                    runtime=(time.perf_counter() - start_time) * 1000
                 )        
                 return output
 

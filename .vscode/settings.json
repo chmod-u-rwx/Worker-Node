@@ -1,13 +1,8 @@
 {
-    "python.testing.pytestArgs": [
-        "test",
-        "--cov=src"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.typeCheckingMode": "strict",
-    "python.analysis.extraPaths": [
-        "./src/worker_node"
-    ],
-    "python-envs.pythonProjects": []
+  "python.testing.pytestArgs": ["test"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.analysis.typeCheckingMode": "strict",
+  "python.analysis.extraPaths": ["./src/worker_node"],
+  "python-envs.pythonProjects": []
 }

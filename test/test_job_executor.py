@@ -7,7 +7,7 @@ import yaml
 import pytest
 
 from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, JobRequestPayload
-from src.worker_node.models.messages import MethodEnum
+from src.worker_node.models.payloads import MethodEnum
 
 
 @pytest.fixture
@@ -40,7 +40,10 @@ def sample_job_file_configuration() -> JobConfiguration:
 
 @pytest.fixture
 def sample_job_request() -> JobRequestPayload:
-    request = JobRequestPayload(request_id=uuid4(),
+    request = JobRequestPayload(
+                                request_id=uuid4(),
+                                master_id=uuid4(),
+                                worker_id=uuid4(),
                                 job_id=uuid4(),
                                 path="hello",
                                 method=MethodEnum.GET, 

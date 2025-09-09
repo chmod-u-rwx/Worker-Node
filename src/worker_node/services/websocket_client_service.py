@@ -1,13 +1,11 @@
 import json
-import httpx
 import websockets
-import asyncio
-from typing import Any, Dict, Optional
-from uuid import uuid4, UUID
+from typing import  Optional
+from uuid import  UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
-from src.worker_node.config import CORE_API_URI
-from src.worker_node.models.master_node import MasterNode
-from src.worker_node.models.payloads import WebsocketMessage, MessageType, JobRequestPayload, JobResponsePayload
+
+from ..models.payloads import WebsocketMessage, MessageType, JobRequestPayload
+from ..core.job_executor import executor
 
 class MasterNodeDiscoveryError(Exception):
     ...
@@ -63,7 +61,7 @@ class WebsocketClientService:
                     print(f"Unexpected error during WebSocket connection (attempt {attempt}): {e}")
         else:
             raise ConnectionError(f"Failed to connect after {max_reconnect_attempts} attempts")
-    
+
     async def listen_for_messages(self) -> None:
         if not self.websocket:
             raise RuntimeError("Not connected to WebSocket server")
@@ -93,22 +91,24 @@ class WebsocketClientService:
 
     async def handle_job_rpc_request(self, job_request: JobRequestPayload):
 
-        # Dummy simulation of running job in qemu controller
-        await asyncio.sleep(2)
-        dummy_payload = JobResponsePayload(
-            request_id=job_request.request_id,
-            job_id=job_request.job_id,
-            master_id=uuid4(),
-            worker_id=uuid4(),
-            status_code=200,
-            body={"result": "Im from worker node"},
-            meta={"meta": "Idk what meta is for"}
-        )
+        payload = executor.run_job(job_request)
+
+        # # Dummy simulation of running job in qemu controller
+        # await asyncio.sleep(2)
+        # dummy_payload = JobResponsePayload(
+        #     request_id=job_request.request_id,
+        #     job_id=job_request.job_id,
+        #     master_id=uuid4(),
+        #     worker_id=uuid4(),
+        #     status_code=200,
+        #     body={"result": "Im from worker node"},
+        #     meta={"meta": "Idk what meta is for"}
+        # )
 
         message = WebsocketMessage(
             request_id=job_request.request_id,
             type=MessageType.JOB_RESPONSE,
-            payloads=dummy_payload
+            payloads=payload
         )
 
         await self.send_message(message=message)

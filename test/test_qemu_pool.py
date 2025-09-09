@@ -40,6 +40,7 @@ def patch_qemu_controller():
 
 def test_qemu_creating_new_vm_at_startup():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     assert len(pool.warm_queue) == MAX_CPU_COUNT_ALLOCATED, "Qemu pool did not create expected numbers of warm vms"
     expected_memory_allocated = (MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED)
@@ -48,6 +49,7 @@ def test_qemu_creating_new_vm_at_startup():
 
 def test_qemu_acquire_release():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     warm_count = len(pool.warm_queue)
     running_count = len(pool.running_queue)
@@ -63,6 +65,7 @@ def test_qemu_acquire_release():
 
 def test_qemu_pool_cleanup():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     warm_count = len(pool.warm_queue)
     running_count = len(pool.running_queue)
@@ -83,6 +86,7 @@ def test_qemu_pool_cleanup():
 
 def test_qemu_empty_warm_queue():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     with pytest.raises(QemuPoolEmptyError):
         while len(pool.warm_queue) >= 0:
@@ -90,6 +94,7 @@ def test_qemu_empty_warm_queue():
 
 def test_qemu_pool_session():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
     pool.acquire = MagicMock()
     pool.release = MagicMock()
     with pool.session() as qemu:

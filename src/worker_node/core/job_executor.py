@@ -3,7 +3,7 @@ from ..models.job_configuration import JobConfiguration
 from .qemu_pool import qemu_pool
 from ..services.local_job_cache_service import LocalJobCacheService
 from ..config import CACHE_SIZE_ALLOCATED
-from ..models.messages import JobRequestPayload, JobResponsePayload
+from ..models.payloads import JobRequestPayload, JobResponsePayload
 
 class JobExecutor():
     def __init__(self) -> None:
@@ -35,10 +35,10 @@ class JobExecutor():
             body = output.stderr if is_error else output.stdout
             meta: dict[Any, Any] = {"stdin": output.stdin, "runtime": output.runtime}
 
-            response = JobResponsePayload(request_id=request.request_id, status_code=status_code, body=body, meta=meta)
+            response = JobResponsePayload(job_id=request.job_id, master_id=request.master_id, worker_id=request.worker_id, request_id=request.request_id, status_code=status_code, body=body, meta=meta)
             return response
         except Exception as e:
-            response = JobResponsePayload(request_id=request.request_id, status_code=500, body=str(e))
+            response = JobResponsePayload(job_id=request.job_id, master_id=request.master_id, worker_id=request.worker_id, request_id=request.request_id, status_code=500, body=str(e))
             return response
 
     def parse_status_code(self, error_map: dict[Any, Any], return_code: int) -> int:
@@ -84,3 +84,4 @@ class JobExecutor():
         
         return args_string.strip()
             
+executor = JobExecutor()

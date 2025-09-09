@@ -18,7 +18,6 @@ class QemuPool:
         self.running_queue: list[QemuController] = []
         self.is_cleaned = False  
 
-        self._warm_vms()
         register_cleanup(self.cleanup)
    
     def get_memory_usage(self) -> int:
@@ -102,7 +101,7 @@ class QemuPool:
         memory_per_machine = MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
             path = Path("./test/path") # update this
-            qemu = QemuController(path, "linux", 1, memory_per_machine)
+            qemu = QemuController(path, 1, memory_per_machine)
             self.warm_queue.append(qemu)
 
 qemu_pool = QemuPool()

@@ -1,7 +1,6 @@
 
 import os
 import time
-from typing import Any
 from uuid import uuid4
 import pytest
 import subprocess
@@ -11,7 +10,6 @@ from unittest.mock import patch, MagicMock
 
 import requests
 from src.worker_node.models.qemu_load import QemuLoad
-from src.worker_node.models.vm_output import VMOutput
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
 from dotenv import load_dotenv
 

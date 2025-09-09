@@ -277,6 +277,7 @@ class TestListenForMessage:
         request_id = uuid4()
         job_request = JobRequestPayload(
             request_id=request_id,
+            path="/test",
             job_id=uuid4(),
             worker_id=uuid4(),
             master_id=uuid4(), 
@@ -339,7 +340,8 @@ class TestSendMessage:
         self,
         websocket_service: WebsocketClientService,
     ):
-        message = {"type": "test"}
+        payload = {"type": "test"}
+        message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
         
         with pytest.raises(RuntimeError, match="Not connected to WebSocket server"):
             await websocket_service.send_message(message)
@@ -351,13 +353,15 @@ class TestSendMessage:
         mock_websocket: AsyncMock
     ):
         websocket_service.websocket = mock_websocket
-        message = {"type": "test"}
         
         # First attempt fails with ConnectionClosed, second succeeds
         mock_websocket.send.side_effect = [ConnectionClosed(None, None), None]
         
         with patch.object(websocket_service, 'disconnect') as mock_disconnect:
             with patch.object(websocket_service, 'connect') as mock_connect:
+                payload = {"type": "test"}
+                message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
                 await websocket_service.send_message(message)
                 
                 mock_disconnect.assert_called_once()
@@ -371,12 +375,14 @@ class TestSendMessage:
         mock_websocket: AsyncMock
     ):
         websocket_service.websocket = mock_websocket
-        message = {"type": "test"}
         
         mock_websocket.send.side_effect = [WebSocketException("Error"), None]
         
         with patch.object(websocket_service, 'disconnect') as mock_disconnect:
             with patch.object(websocket_service, 'connect') as mock_connect:
+                payload = {"type": "test"}
+                message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
                 await websocket_service.send_message(message)
                 
                 mock_disconnect.assert_called_once()
@@ -395,6 +401,9 @@ class TestSendMessage:
         mock_websocket.send.side_effect = ValueError("Unexpected error")
         
         with pytest.raises(ValueError):
+            payload = {"type": "test"}
+            message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
             await websocket_service.send_message(message)
         
         assert mock_websocket.send.call_count == 2
@@ -469,9 +478,11 @@ class TestWebsocketClientIntegration:
                     await websocket_service.connect(max_reconnect_attempts=3)
                     assert websocket_service.is_connected()
                     
-                    test_message = {"type": "test"}
-                    await websocket_service.send_message(test_message)
-                    mock_websocket.send.assert_called_with(json.dumps(test_message))
+                    payload = {"type": "test"}
+                    message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
+                    await websocket_service.send_message(message)
+                    mock_websocket.send.assert_called_with(json.dumps(message))
                     
                     await websocket_service.disconnect()
                     assert not websocket_service.is_connected()
