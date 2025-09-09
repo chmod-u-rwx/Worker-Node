@@ -1,11 +1,15 @@
+from datetime import datetime
+import hashlib
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
+from pydantic import HttpUrl
 import yaml
 import pytest
 
+from src.worker_node.models.job import Job
 from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, JobRequestPayload
 from src.worker_node.models.payloads import MethodEnum
 
@@ -125,5 +129,33 @@ def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_conf
     status_code = executor.parse_status_code(error_map, status_code)
     assert status_code  == 500 # should default to 500 even if no default mappint provided
 
+
+@pytest.mark.integration
+def test_run_job_integration(executor: JobExecutor, sample_job_request: JobRequestPayload):
+
+    sample_job = Job(user_id=uuid4(),
+                     job_id=sample_job_request.job_id,
+                     job_name="hash_job",
+                     job_description=" test",
+                     repo_url=HttpUrl("https://github.com/chmod-u-rwx/Binary-Sample-Project.git"),
+                     created_at=datetime.now(),
+                     updated_at=datetime.now())
+
+    executor.local_job_cache.fetch_job_information = lambda job_id: sample_job
+
+    assert sample_job_request.params
+    assert sample_job_request.params["qty"]
+    assert sample_job_request.body
+
+    result = sample_job_request.body
+    for _ in range(int(sample_job_request.params["qty"])):
+        result = hashlib.sha256(result.encode()).hexdigest()
+
+    expected: dict[Any, Any] =  {"input": sample_job_request.body, "result": result}
+
+    output = executor.run_job(sample_job_request)
+
+    assert output.body == expected
+    ...
 
 

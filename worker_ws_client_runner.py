@@ -1,4 +1,5 @@
 import asyncio
+import src.worker_node.core.qemu_pool # type: ignore instantiate qemu pools 
 from src.worker_node.services.websocket_client_service import worker_ws_client
 
 async def main():
