@@ -1,0 +1,33 @@
+project:
+  name: "http_sample_project"
+  description: "Sample project to test serverless runtime config"
+  version: "0.1.0"
+  owner: "your-team-name"
+
+run:
+  runtime: "python"
+  file: "main.py"
+  timeout: 10
+  cpu: 2
+  memory: 256
+  args:
+    --sample: args # args that will always be here
+
+input:
+  type: bin
+  allow_args: True
+  allowed_args: ["--qty"]
+  allow_stdin: True
+
+output:
+  type: stdout
+
+error:
+  type: stdout
+
+error_map:
+  "0": 200 # Success
+  "1": 400 # Invalid args
+  "2": 500 # Internal server error
+  default: 500 # fallback if unmapped
+

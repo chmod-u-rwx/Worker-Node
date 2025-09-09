@@ -1,4 +1,6 @@
 alpine/
+shared/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
