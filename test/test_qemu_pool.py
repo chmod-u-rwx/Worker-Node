@@ -1,3 +1,4 @@
+
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError, QemuCleaned
@@ -95,7 +96,6 @@ def test_qemu_pool_session():
         print(qemu)
     
     pool.acquire.assert_called_once()
-    pool.release.assert_called_once()
-    
+    pool.release.assert_called_once()    
 
 
