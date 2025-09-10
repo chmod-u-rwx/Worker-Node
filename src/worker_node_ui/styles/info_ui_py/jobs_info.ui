@@ -1,0 +1,1213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>jobs_dash</class>
+ <widget class="QMainWindow" name="jobs_dash">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1440</width>
+    <height>810</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1440</width>
+    <height>810</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1440</width>
+    <height>810</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>CrowdCloud</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>1440</width>
+     <height>810</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>1440</width>
+     <height>810</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(0, 3, 31);</string>
+   </property>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>2</width>
+      <height>2</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout"/>
+   </widget>
+   <widget class="QLabel" name="logo">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>50</y>
+      <width>52</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>../../../../../../../Downloads/signup1logo.svg</pixmap>
+    </property>
+   </widget>
+   <widget class="QLabel" name="welcome_label">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>60</y>
+      <width>461</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Century Gothic</family>
+      <pointsize>22</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+color: white;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Hi,  Welcome Back</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="thru_trend">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>130</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Throughput Trend</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ttrend_con">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>120</y>
+      <width>658</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>120</y>
+      <width>43</width>
+      <height>301</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QToolButton" name="dash_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/dashboard.png</normaloff>../../../../../Downloads/dashboard.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="sys_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/system.png</normaloff>../../../../../Downloads/system.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="job_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/jobs.png</normaloff>../../../../../Downloads/jobs.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="earning_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/earnings.png</normaloff>../../../../../Downloads/earnings.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QToolButton" name="settings_bt">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>740</y>
+      <width>51</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>15</horstretch>
+      <verstretch>15</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QToolButton {
+    background: transparent;       /* no fill */
+    color: white;                  /* icon/text color */
+    border: 1px solid #ffffff;     /* white border */
+    border-radius: 25px;           /* make it round (half of width/height) */
+    padding: 3px;                  /* space inside */
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../../../../../Downloads/settings.png</normaloff>../../../../../Downloads/settings.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>35</width>
+      <height>35</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QWidget" name="ttrend_chart" native="true">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>150</y>
+      <width>361</width>
+      <height>211</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;</string>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="prof_button">
+    <property name="geometry">
+     <rect>
+      <x>1320</x>
+      <y>50</y>
+      <width>51</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>15</horstretch>
+      <verstretch>15</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QToolButton {
+    background: transparent;       /* no fill */
+    color: white;                  /* icon/text color */
+    border: 1px solid #ffffff;     /* white border */
+    border-radius: 25px;           /* make it round (half of width/height) */
+    padding: 3px;                  /* space inside */
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../../../../../Downloads/Profile.png</normaloff>../../../../../Downloads/Profile.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>35</width>
+      <height>35</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="notif_button">
+    <property name="geometry">
+     <rect>
+      <x>1250</x>
+      <y>50</y>
+      <width>51</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>15</horstretch>
+      <verstretch>15</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QToolButton {
+    background: transparent;       /* no fill */
+    color: white;                  /* icon/text color */
+    border: 1px solid #ffffff;     /* white border */
+    border-radius: 25px;           /* make it round (half of width/height) */
+    padding: 3px;                  /* space inside */
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../../../../../Downloads/CC Desktop UI (14)/Login/Communication/Notification.png</normaloff>../../../../../Downloads/CC Desktop UI (14)/Login/Communication/Notification.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>35</width>
+      <height>35</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QWidget" name="toggle_switch" native="true">
+    <property name="geometry">
+     <rect>
+      <x>1140</x>
+      <y>60</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="workerM_label">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>90</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Worker Mode</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="scurrently_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>190</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Slots currently in use: 8</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="tsavail_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>170</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Total slots available: 20</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="sutilization_con">
+    <property name="geometry">
+     <rect>
+      <x>773</x>
+      <y>120</y>
+      <width>251</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="avg_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>180</y>
+      <width>151</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Average in 24h: 3 jobs</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="highest_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>200</y>
+      <width>151</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Highest: 6 jobs</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="slots_util">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>130</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Slots Utilization</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lowest_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>220</y>
+      <width>151</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Lowest: 1.5 jobs</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="sys_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>240</y>
+      <width>151</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>System capacity: 20</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="nodeA_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>230</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Node A: 6/8 slots used</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="nodeB_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>250</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Node B: 4/6 slots used</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="nodeC_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>270</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Node C: 2/6 slots used</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="tstats_con">
+    <property name="geometry">
+     <rect>
+      <x>1040</x>
+      <y>120</y>
+      <width>371</width>
+      <height>271</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="t_statistics">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>130</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Today's Statistics</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="today_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>170</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Today: 255 jobs completed</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="yesterday_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>190</y>
+      <width>171</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+</string>
+    </property>
+    <property name="text">
+     <string>Yesterday: 105 jobs completed</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="tweek_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>210</y>
+      <width>171</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>This week: 555 jobs completed</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lweek_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>230</y>
+      <width>171</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Last week: 334 jobs completed</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="rj_overtime">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>270</y>
+      <width>171</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Running Jobs Over Time</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="currently_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>310</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Currently: 3 jobs running</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="pload_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>330</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Peak Load: 7 jobs</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lload_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>350</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #a2a1a1;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Lowest Load: 2 jobs</string>
+    </property>
+   </widget>
+   <widget class="QTableView" name="jhis_tview">
+    <property name="geometry">
+     <rect>
+      <x>770</x>
+      <y>430</y>
+      <width>641</width>
+      <height>361</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QTableView {
+    background: transparent;
+    border: 1px solid #ffffff;
+    border-radius: 35px;   /* adjust radius to your liking */
+    gridline-color: rgba(255,255,255,0.2);
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+    selection-background-color: rgba(125, 95, 255, 0.4);
+}
+
+/* Internal viewport must also be rounded */
+QTableView::viewport {
+    background: transparent;
+    border-radius: 20px;
+}
+
+/* Header styling */
+QHeaderView::section {
+    background-color: rgba(20,20,50,0.6);
+    color: white;
+    border: none;
+    padding: 6px;
+    font-weight: bold;
+}
+
+/* Optional: first/last header corners */
+QHeaderView::section:first {
+    border-top-left-radius: 20px;
+}
+QHeaderView::section:last {
+    border-top-right-radius: 20px;
+}
+</string>
+    </property>
+   </widget>
+   <widget class="QTableView" name="crjobs_tview">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>430</y>
+      <width>654</width>
+      <height>361</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QTableView {
+    background: transparent;
+    border: 1px solid #ffffff;
+    border-radius: 35px;   /* adjust radius to your liking */
+    gridline-color: rgba(255,255,255,0.2);
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+    selection-background-color: rgba(125, 95, 255, 0.4);
+}
+
+/* Internal viewport must also be rounded */
+QTableView::viewport {
+    background: transparent;
+    border-radius: 20px;
+}
+
+/* Header styling */
+QHeaderView::section {
+    background-color: rgba(20,20,50,0.6);
+    color: white;
+    border: none;
+    padding: 6px;
+    font-weight: bold;
+}
+
+/* Optional: first/last header corners */
+QHeaderView::section:first {
+    border-top-left-radius: 20px;
+}
+QHeaderView::section:last {
+    border-top-right-radius: 20px;
+}
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="cr_jobs">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>400</y>
+      <width>141</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Current Running Jobs</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="job_history">
+    <property name="geometry">
+     <rect>
+      <x>790</x>
+      <y>400</y>
+      <width>141</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Job history</string>
+    </property>
+   </widget>
+   <zorder>sutilization_con</zorder>
+   <zorder>crjobs_tview</zorder>
+   <zorder>ttrend_con</zorder>
+   <zorder>horizontalLayoutWidget</zorder>
+   <zorder>logo</zorder>
+   <zorder>welcome_label</zorder>
+   <zorder>thru_trend</zorder>
+   <zorder>verticalLayoutWidget</zorder>
+   <zorder>settings_bt</zorder>
+   <zorder>prof_button</zorder>
+   <zorder>notif_button</zorder>
+   <zorder>toggle_switch</zorder>
+   <zorder>workerM_label</zorder>
+   <zorder>scurrently_label</zorder>
+   <zorder>tsavail_label</zorder>
+   <zorder>avg_label</zorder>
+   <zorder>highest_label</zorder>
+   <zorder>slots_util</zorder>
+   <zorder>lowest_label</zorder>
+   <zorder>sys_label</zorder>
+   <zorder>nodeA_label</zorder>
+   <zorder>nodeB_label</zorder>
+   <zorder>nodeC_label</zorder>
+   <zorder>tstats_con</zorder>
+   <zorder>t_statistics</zorder>
+   <zorder>today_label</zorder>
+   <zorder>yesterday_label</zorder>
+   <zorder>tweek_label</zorder>
+   <zorder>lweek_label</zorder>
+   <zorder>rj_overtime</zorder>
+   <zorder>currently_label</zorder>
+   <zorder>pload_label</zorder>
+   <zorder>lload_label</zorder>
+   <zorder>jhis_tview</zorder>
+   <zorder>cr_jobs</zorder>
+   <zorder>job_history</zorder>
+   <zorder>ttrend_chart</zorder>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

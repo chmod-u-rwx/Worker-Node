@@ -1,0 +1,1047 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>gen_settings</class>
+ <widget class="QWidget" name="gen_settings">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1031</width>
+    <height>569</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: #00031f
+</string>
+  </property>
+  <widget class="QLabel" name="settings_2">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>30</y>
+     <width>151</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>26</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background: transparent;
+color: white;
+
+</string>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cache_path">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>40</y>
+     <width>121</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Segoe UI</family>
+     <pointsize>11</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: white;
+background-color: transparent;
+</string>
+   </property>
+   <property name="text">
+    <string>Cache Path</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="rallocation_bt">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>90</y>
+     <width>221</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Segoe UI</family>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: white;
+    padding: 6px 12px;
+}
+
+QPushButton:hover {
+    border: 1px solid #ffffff; 
+}
+
+QPushButton:pressed {
+    border: 1px solid #ffffff;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Resource Allocation</string>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>../../../../../Downloads/resource_icon.png</normaloff>../../../../../Downloads/resource_icon.png</iconset>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="eprofile_bt">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>130</y>
+     <width>151</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Segoe UI</family>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: white;
+    padding: 6px 12px;
+}
+
+QPushButton:hover {
+    border: 1px solid #ffffff;
+}
+
+QPushButton:pressed {
+    border: 1px solid #ffffff; 
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Edit Profile</string>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>../../../../../Downloads/eprofile.png</normaloff>../../../../../Downloads/eprofile.png</iconset>
+   </property>
+  </widget>
+  <widget class="QLabel" name="set_con">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>30</y>
+     <width>721</width>
+     <height>511</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="cpu_lineedit">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>170</y>
+     <width>71</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>-1</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+    border: 1px solid #ffffff;   /* thickness + color */
+    border-radius: 12px;         /* rounded corners */
+    padding: 6px;
+    font-size: 14px;
+	font-family: &quot;Century Gothic&quot;;
+	color: #ffffff;
+	background-color: transparent;
+	qproperty-alignment: 'AlignCenter';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>57%</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="conf_cpu">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>140</y>
+     <width>341</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: white;
+background-color: transparent;
+</string>
+   </property>
+   <property name="text">
+    <string>Configure CPU utilization limit</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cpu_min_label">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>170</y>
+     <width>16</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="cpu_slider">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>190</y>
+     <width>381</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QSlider {
+    background: transparent;
+}
+
+QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;
+    background: #D9D9D9;
+    border-radius: 4px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #9C7DFF;   /* Violet filled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::add-page:horizontal {
+    background: #D9D9D9;   /* Unfilled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+    border: 1px solid #5a2a83;
+    width: 18px;
+    border-radius: 9px;
+	margin: -5px 0px;  
+    background: qradialgradient(
+        cx: 0.5, cy: 0.5, radius: 0.8,
+        fx: 0.5, fy: 0.5,
+        stop: 0 #9C7DFF,        /* Purple center */
+        stop: 0.6 #9C7DFF,
+        stop: 1 transparent     /* Fade to transparent */
+    );
+}
+</string>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="value">
+    <number>50</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cpu_max_label">
+   <property name="geometry">
+    <rect>
+     <x>750</x>
+     <y>170</y>
+     <width>31</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>100</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="cache_lineedit">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>80</y>
+     <width>481</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 7px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLineEdit:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+   </property>
+   <property name="inputMask">
+    <string/>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="placeholderText">
+    <string>/tmp/crowdcloud</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="schanges_bt">
+   <property name="geometry">
+    <rect>
+     <x>830</x>
+     <y>470</y>
+     <width>151</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Save changes</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="conf_cores">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>230</y>
+     <width>341</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: white;
+background-color: transparent;
+</string>
+   </property>
+   <property name="text">
+    <string>Configure cores utilization limit</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="core_min_label">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>260</y>
+     <width>16</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="core_max_label_">
+   <property name="geometry">
+    <rect>
+     <x>750</x>
+     <y>260</y>
+     <width>31</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>100</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="core_lineedit">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>260</y>
+     <width>71</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>-1</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+    border: 1px solid #ffffff;   /* thickness + color */
+    border-radius: 12px;         /* rounded corners */
+    padding: 6px;
+    font-size: 14px;
+	font-family: &quot;Century Gothic&quot;;
+	color: #ffffff;
+	background-color: transparent;
+	qproperty-alignment: 'AlignCenter';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>3</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="cores_slider">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>280</y>
+     <width>381</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QSlider {
+    background: transparent;
+}
+
+QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;
+    background: #D9D9D9;
+    border-radius: 4px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #9C7DFF;   /* Violet filled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::add-page:horizontal {
+    background: #D9D9D9;   /* Unfilled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+    border: 1px solid #5a2a83;
+    width: 18px;
+    border-radius: 9px;
+	margin: -5px 0px;  
+    background: qradialgradient(
+        cx: 0.5, cy: 0.5, radius: 0.8,
+        fx: 0.5, fy: 0.5,
+        stop: 0 #9C7DFF,        /* Purple center */
+        stop: 0.6 #9C7DFF,
+        stop: 1 transparent     /* Fade to transparent */
+    );
+}
+</string>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="value">
+    <number>50</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QSlider" name="ram_slider">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>370</y>
+     <width>381</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QSlider {
+    background: transparent;
+}
+
+QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;
+    background: #D9D9D9;
+    border-radius: 4px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #9C7DFF;   /* Violet filled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::add-page:horizontal {
+    background: #D9D9D9;   /* Unfilled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+    border: 1px solid #5a2a83;
+    width: 18px;
+    border-radius: 9px;
+	margin: -5px 0px;  
+    background: qradialgradient(
+        cx: 0.5, cy: 0.5, radius: 0.8,
+        fx: 0.5, fy: 0.5,
+        stop: 0 #9C7DFF,        /* Purple center */
+        stop: 0.6 #9C7DFF,
+        stop: 1 transparent     /* Fade to transparent */
+    );
+}
+</string>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="value">
+    <number>50</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ram_min_label">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>350</y>
+     <width>16</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ram_max_label">
+   <property name="geometry">
+    <rect>
+     <x>750</x>
+     <y>350</y>
+     <width>31</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>100</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="conf_ram">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>320</y>
+     <width>341</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: white;
+background-color: transparent;
+</string>
+   </property>
+   <property name="text">
+    <string>Configure RAM utilization limit</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="ram_lineedit">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>350</y>
+     <width>71</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>-1</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+    border: 1px solid #ffffff;   /* thickness + color */
+    border-radius: 12px;         /* rounded corners */
+    padding: 6px;
+    font-size: 14px;
+	font-family: &quot;Century Gothic&quot;;
+	color: #ffffff;
+	background-color: transparent;
+	qproperty-alignment: 'AlignCenter';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>57%</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="cache_slider">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>460</y>
+     <width>381</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QSlider {
+    background: transparent;
+}
+
+QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;
+    background: #D9D9D9;
+    border-radius: 4px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #9C7DFF;   /* Violet filled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::add-page:horizontal {
+    background: #D9D9D9;   /* Unfilled part */
+    border: 1px solid #777777;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider::handle:horizontal {
+    border: 1px solid #5a2a83;
+    width: 18px;
+    border-radius: 9px;
+	margin: -5px 0px;  
+    background: qradialgradient(
+        cx: 0.5, cy: 0.5, radius: 0.8,
+        fx: 0.5, fy: 0.5,
+        stop: 0 #9C7DFF,        /* Purple center */
+        stop: 0.6 #9C7DFF,
+        stop: 1 transparent     /* Fade to transparent */
+    );
+}
+</string>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="value">
+    <number>50</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cache_min_label">
+   <property name="geometry">
+    <rect>
+     <x>400</x>
+     <y>440</y>
+     <width>16</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>0</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cache_max_label">
+   <property name="geometry">
+    <rect>
+     <x>750</x>
+     <y>440</y>
+     <width>31</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLabel {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: &quot;Century Gothic&quot;;
+    color: #ffffff;
+    background-color: transparent;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>100</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="conf_cache">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>410</y>
+     <width>341</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: white;
+background-color: transparent;
+</string>
+   </property>
+   <property name="text">
+    <string>Configure cache utilization limit</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="cache_lineedit_2">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>440</y>
+     <width>71</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>-1</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit {
+    border: 1px solid #ffffff;   /* thickness + color */
+    border-radius: 12px;         /* rounded corners */
+    padding: 6px;
+    font-size: 14px;
+	font-family: &quot;Century Gothic&quot;;
+	color: #ffffff;
+	background-color: transparent;
+	qproperty-alignment: 'AlignCenter';
+}
+</string>
+   </property>
+   <property name="text">
+    <string>57%</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancel_bt">
+   <property name="geometry">
+    <rect>
+     <x>830</x>
+     <y>500</y>
+     <width>151</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Cancel</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="logout_bt">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>520</y>
+     <width>81</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Segoe UI</family>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    background: transparent;
+    border: none;
+    color: #FF3B30;  /* purple link color */
+}
+
+</string>
+   </property>
+   <property name="text">
+    <string>Log out</string>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>../../../../../Downloads/logout.png</normaloff>../../../../../Downloads/logout.png</iconset>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearc_bt">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>410</y>
+     <width>111</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Clear cache</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearc_bt_2">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>45</y>
+     <width>81</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Browse</string>
+   </property>
+  </widget>
+  <zorder>set_con</zorder>
+  <zorder>settings_2</zorder>
+  <zorder>cache_path</zorder>
+  <zorder>rallocation_bt</zorder>
+  <zorder>eprofile_bt</zorder>
+  <zorder>cpu_lineedit</zorder>
+  <zorder>conf_cpu</zorder>
+  <zorder>cpu_min_label</zorder>
+  <zorder>cpu_slider</zorder>
+  <zorder>cpu_max_label</zorder>
+  <zorder>cache_lineedit</zorder>
+  <zorder>schanges_bt</zorder>
+  <zorder>conf_cores</zorder>
+  <zorder>core_min_label</zorder>
+  <zorder>core_max_label_</zorder>
+  <zorder>core_lineedit</zorder>
+  <zorder>cores_slider</zorder>
+  <zorder>ram_slider</zorder>
+  <zorder>ram_min_label</zorder>
+  <zorder>ram_max_label</zorder>
+  <zorder>conf_ram</zorder>
+  <zorder>ram_lineedit</zorder>
+  <zorder>cache_slider</zorder>
+  <zorder>cache_min_label</zorder>
+  <zorder>cache_max_label</zorder>
+  <zorder>conf_cache</zorder>
+  <zorder>cache_lineedit_2</zorder>
+  <zorder>cancel_bt</zorder>
+  <zorder>logout_bt</zorder>
+  <zorder>clearc_bt</zorder>
+  <zorder>clearc_bt_2</zorder>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

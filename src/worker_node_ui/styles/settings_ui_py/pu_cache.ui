@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>cache_question</class>
+ <widget class="QDialog" name="cache_question">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>290</width>
+    <height>164</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: #00031f;
+
+</string>
+  </property>
+  <widget class="QLabel" name="question">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>30</y>
+     <width>261</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Century Gothic</family>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: #ffffff;
+background: transparent;</string>
+   </property>
+   <property name="text">
+    <string>Are you sure you want to clear your cache?  This will remove all cached data, including temporary files. Some apps or pages may take longer to load after this action.</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="yes_bt">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>120</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+   </property>
+   <property name="text">
+    <string>Yes</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="no_bt">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>120</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	font: bold pt &quot;Century Gothic&quot;;
+    background-color: #00031F;   /* button fill color */
+    color: white;                /* text color */
+    border: 1px solid #340561;   /* stroke/border */
+    border-radius: 10px;         /* corner radius */   
+}
+QPushButton:hover {
+    background-color: #6A0DBF;   /* hover color */
+}
+</string>
+   </property>
+   <property name="text">
+    <string>No</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

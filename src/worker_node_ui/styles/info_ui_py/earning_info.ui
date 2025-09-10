@@ -1,0 +1,1406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>earning_dash</class>
+ <widget class="QMainWindow" name="earning_dash">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1440</width>
+    <height>810</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1440</width>
+    <height>810</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1440</width>
+    <height>810</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>CrowdCloud</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>1440</width>
+     <height>810</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>1440</width>
+     <height>810</height>
+    </size>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(0, 3, 31);</string>
+   </property>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>2</width>
+      <height>2</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout"/>
+   </widget>
+   <widget class="QLabel" name="logo">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>60</y>
+      <width>52</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>../../../../../../../Downloads/signup1logo.svg</pixmap>
+    </property>
+   </widget>
+   <widget class="QLabel" name="welcome_label">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>70</y>
+      <width>461</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Century Gothic</family>
+      <pointsize>22</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+color: white;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Hi,  Welcome Back</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="earning_rate">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>140</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Earning Rate</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="earning_con">
+    <property name="geometry">
+     <rect>
+      <x>470</x>
+      <y>130</y>
+      <width>291</width>
+      <height>320</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>130</y>
+      <width>43</width>
+      <height>301</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QToolButton" name="dash_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/dashboard.png</normaloff>../../../../../Downloads/dashboard.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="sys_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/system.png</normaloff>../../../../../Downloads/system.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="job_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/jobs.png</normaloff>../../../../../Downloads/jobs.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="earning_bt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>15</horstretch>
+         <verstretch>15</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../../../../Downloads/earnings.png</normaloff>../../../../../Downloads/earnings.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>31</width>
+         <height>41</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QToolButton" name="settings_bt">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>740</y>
+      <width>51</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>15</horstretch>
+      <verstretch>15</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QToolButton {
+    background: transparent;       /* no fill */
+    color: white;                  /* icon/text color */
+    border: 1px solid #ffffff;     /* white border */
+    border-radius: 25px;           /* make it round (half of width/height) */
+    padding: 3px;                  /* space inside */
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../../../../../Downloads/settings.png</normaloff>../../../../../Downloads/settings.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>35</width>
+      <height>35</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QLabel" name="balance_con">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>130</y>
+      <width>351</width>
+      <height>319</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: #200447;
+    border: 2px solid #340561;
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="balance_details">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>140</y>
+      <width>121</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Balance Details</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="eline_chart" native="true">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>230</y>
+      <width>251</width>
+      <height>131</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="prof_button">
+    <property name="geometry">
+     <rect>
+      <x>1310</x>
+      <y>60</y>
+      <width>51</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>15</horstretch>
+      <verstretch>15</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QToolButton {
+    background: transparent;       /* no fill */
+    color: white;                  /* icon/text color */
+    border: 1px solid #ffffff;     /* white border */
+    border-radius: 25px;           /* make it round (half of width/height) */
+    padding: 3px;                  /* space inside */
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../../../../../Downloads/Profile.png</normaloff>../../../../../Downloads/Profile.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>35</width>
+      <height>35</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QToolButton" name="notif_button">
+    <property name="geometry">
+     <rect>
+      <x>1240</x>
+      <y>60</y>
+      <width>51</width>
+      <height>50</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>15</horstretch>
+      <verstretch>15</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QToolButton {
+    background: transparent;       /* no fill */
+    color: white;                  /* icon/text color */
+    border: 1px solid #ffffff;     /* white border */
+    border-radius: 25px;           /* make it round (half of width/height) */
+    padding: 3px;                  /* space inside */
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>../../../../../Downloads/CC Desktop UI (14)/Login/Communication/Notification.png</normaloff>../../../../../Downloads/CC Desktop UI (14)/Login/Communication/Notification.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>35</width>
+      <height>35</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QWidget" name="toggle_switch" native="true">
+    <property name="geometry">
+     <rect>
+      <x>1130</x>
+      <y>70</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="workerM_label">
+    <property name="geometry">
+     <rect>
+      <x>1140</x>
+      <y>100</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Worker Mode</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ppayouts_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>280</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Pending payouts: 650.25</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="etoday_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>260</y>
+      <width>131</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Earning Today: 450.00</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="acc_number">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>380</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Account Number</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="accnum_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>400</y>
+      <width>181</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>014815685355014815685355</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="current_con">
+    <property name="geometry">
+     <rect>
+      <x>780</x>
+      <y>130</y>
+      <width>291</width>
+      <height>320</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="trans_con">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>470</y>
+      <width>351</width>
+      <height>321</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="revenue_con">
+    <property name="geometry">
+     <rect>
+      <x>470</x>
+      <y>470</y>
+      <width>601</width>
+      <height>321</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="tvp_con">
+    <property name="geometry">
+     <rect>
+      <x>1090</x>
+      <y>130</y>
+      <width>311</width>
+      <height>661</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	background-color: rgba(20, 20, 50, 10);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 35px;
+    padding: 8px;
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+}
+
+QLabel:focus {
+    border: 1px solid #7D5FFF;
+    box-shadow: 0px 0px 8px #7D5FFF;
+}
+</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="amount_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>190</y>
+      <width>251</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>24</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>PHP 30,000.25</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="inc_wid" native="true">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>230</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="inc_label">
+    <property name="geometry">
+     <rect>
+      <x>840</x>
+      <y>220</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>-- --</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="currentp_label">
+    <property name="geometry">
+     <rect>
+      <x>900</x>
+      <y>220</y>
+      <width>61</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>-- --</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="earning_label">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>180</y>
+      <width>191</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>24</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>PHP 125/hr</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="avgearning_label">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>380</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Average Earning: 50/hr</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="wavg_label">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>400</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Weekly Average: 110/hr</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="current_earning">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>140</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Current Earnings</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="cearning_label">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>180</y>
+      <width>191</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>24</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>PHP 890.93</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="current_chart" native="true">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>310</y>
+      <width>251</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="transactions">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>480</y>
+      <width>121</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+
+</string>
+    </property>
+    <property name="text">
+     <string>Transactions</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="revenue">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>480</y>
+      <width>121</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Revenue</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="totalv_performance">
+    <property name="geometry">
+     <rect>
+      <x>1170</x>
+      <y>140</y>
+      <width>161</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Total View Performance</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="tvp_chart" native="true">
+    <property name="geometry">
+     <rect>
+      <x>1140</x>
+      <y>190</y>
+      <width>224</width>
+      <height>224</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="tjexe_label">
+    <property name="geometry">
+     <rect>
+      <x>1180</x>
+      <y>430</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Total Jobs Executed: 1234</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="tearning_label">
+    <property name="geometry">
+     <rect>
+      <x>1190</x>
+      <y>450</y>
+      <width>141</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Total Earnings: 512.456</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ajsrate_label">
+    <property name="geometry">
+     <rect>
+      <x>1160</x>
+      <y>470</y>
+      <width>191</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Average Job Success Rate: 88%</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="revenue_chart" native="true">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>580</y>
+      <width>541</width>
+      <height>181</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background: transparent;
+</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="trevenue_label">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>520</y>
+      <width>151</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Today's revenue: 700.00</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="yrevenue_label">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>540</y>
+      <width>171</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Yesterday's revenue: 675.24</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="rweek_label">
+    <property name="geometry">
+     <rect>
+      <x>730</x>
+      <y>510</y>
+      <width>161</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Revenue this week: 1123.75</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="rlweek_label">
+    <property name="geometry">
+     <rect>
+      <x>730</x>
+      <y>530</y>
+      <width>161</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Revenue last week: 7400.89</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lrevenue_label">
+    <property name="geometry">
+     <rect>
+      <x>730</x>
+      <y>550</y>
+      <width>171</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: white;
+background: transparent;
+
+</string>
+    </property>
+    <property name="text">
+     <string>Lifetime revenue: 11,345.56</string>
+    </property>
+   </widget>
+   <widget class="QTableView" name="trans_tablev">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>520</y>
+      <width>311</width>
+      <height>251</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QTableView {
+    background: transparent;
+    border: 1px solid #ffffff;
+    border-radius: 20px;   /* adjust radius to your liking */
+    gridline-color: rgba(255,255,255,0.2);
+    color: white;
+    font-family: &quot;Segoe UI&quot;;
+    font-size: 13px;
+    selection-background-color: rgba(125, 95, 255, 0.4);
+}
+
+/* Internal viewport must also be rounded */
+QTableView::viewport {
+    background: transparent;
+    border-radius: 20px;
+}
+
+/* Header styling */
+QHeaderView::section {
+    background-color: rgba(20,20,50,0.6);
+    color: white;
+    border: none;
+    padding: 6px;
+    font-weight: bold;
+}
+
+/* Optional: first/last header corners */
+QHeaderView::section:first {
+    border-top-left-radius: 20px;
+}
+QHeaderView::section:last {
+    border-top-right-radius: 20px;
+}
+</string>
+    </property>
+   </widget>
+   <zorder>current_con</zorder>
+   <zorder>trans_con</zorder>
+   <zorder>earning_con</zorder>
+   <zorder>horizontalLayoutWidget</zorder>
+   <zorder>logo</zorder>
+   <zorder>welcome_label</zorder>
+   <zorder>earning_rate</zorder>
+   <zorder>verticalLayoutWidget</zorder>
+   <zorder>settings_bt</zorder>
+   <zorder>balance_con</zorder>
+   <zorder>balance_details</zorder>
+   <zorder>eline_chart</zorder>
+   <zorder>prof_button</zorder>
+   <zorder>notif_button</zorder>
+   <zorder>toggle_switch</zorder>
+   <zorder>workerM_label</zorder>
+   <zorder>ppayouts_label</zorder>
+   <zorder>etoday_label</zorder>
+   <zorder>acc_number</zorder>
+   <zorder>accnum_label</zorder>
+   <zorder>revenue_con</zorder>
+   <zorder>tvp_con</zorder>
+   <zorder>amount_label</zorder>
+   <zorder>inc_wid</zorder>
+   <zorder>inc_label</zorder>
+   <zorder>currentp_label</zorder>
+   <zorder>earning_label</zorder>
+   <zorder>avgearning_label</zorder>
+   <zorder>wavg_label</zorder>
+   <zorder>current_earning</zorder>
+   <zorder>cearning_label</zorder>
+   <zorder>current_chart</zorder>
+   <zorder>transactions</zorder>
+   <zorder>revenue</zorder>
+   <zorder>totalv_performance</zorder>
+   <zorder>tvp_chart</zorder>
+   <zorder>tjexe_label</zorder>
+   <zorder>tearning_label</zorder>
+   <zorder>ajsrate_label</zorder>
+   <zorder>revenue_chart</zorder>
+   <zorder>trevenue_label</zorder>
+   <zorder>yrevenue_label</zorder>
+   <zorder>rweek_label</zorder>
+   <zorder>rlweek_label</zorder>
+   <zorder>lrevenue_label</zorder>
+   <zorder>trans_tablev</zorder>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

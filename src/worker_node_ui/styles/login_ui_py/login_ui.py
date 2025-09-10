@@ -115,7 +115,6 @@ class Ui_login(object):
 "\n"
 "QLineEdit:focus {\n"
 "    border: 1px solid #7D5FFF;\n"
-"    box-shadow: 0px 0px 8px #7D5FFF;\n"
 "}\n"
 "")
         self.login_container = QLabel(self.centralwidget)
@@ -133,7 +132,6 @@ class Ui_login(object):
 "\n"
 "QLabel:focus {\n"
 "    border: 1px solid #7D5FFF;\n"
-"    box-shadow: 0px 0px 8px #7D5FFF;\n"
 "}\n"
 "")
         self.password_label = QLabel(self.centralwidget)
@@ -158,7 +156,6 @@ class Ui_login(object):
 "\n"
 "QLineEdit:focus {\n"
 "    border: 1px solid #7D5FFF;\n"
-"    box-shadow: 0px 0px 8px #7D5FFF;\n"
 "}\n"
 "")
         login_page.setCentralWidget(self.centralwidget)

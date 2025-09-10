@@ -244,7 +244,6 @@ class Ui_signup_almost(object):
 "\n"
 "QLineEdit:focus {\n"
 "    border: 1px solid #7D5FFF;\n"
-"    box-shadow: 0px 0px 8px #7D5FFF;\n"
 "}\n"
 "")
         self.pushButton = QPushButton(self.centralwidget)

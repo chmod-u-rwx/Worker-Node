@@ -1,8 +1,10 @@
-from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMainWindow, QLabel, QLineEdit
-from src.worker_node_ui.styles.signup_ui_py.signup_create_ui import Ui_signup_create
 import re
+from PySide6.QtCore import Qt
+from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtWidgets import QMainWindow, QLabel, QLineEdit, QVBoxLayout
+from src.worker_node_ui.styles.signup_ui_py.signup_create_ui import Ui_signup_create
+
+from src.worker_node_ui.components.frame_bar.title_bar import TitleBar
 
 class SignupWindow(QMainWindow):
     def __init__(self, controller):
@@ -12,6 +14,13 @@ class SignupWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self.setWindowIcon(QtGui.QIcon("src/worker_node_ui/resources/images/desk_logo"".png"))
+
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
+        self.title_bar = TitleBar(self)
+        container_layout = QVBoxLayout(self.centralWidget())
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+        container_layout.addWidget(self.title_bar, 0, Qt.AlignRight | Qt.AlignTop)
 
         self.setup_floating_labels()
         self.add_password_toggle(self.ui.password_field)
@@ -113,13 +122,21 @@ class SignupWindow(QMainWindow):
         if not self.validate_email(email):
             QtWidgets.QMessageBox.warning(self, "Error", "Invalid email address!")
             return
+        
+        if len(password) < 8:
+            QtWidgets.QMessageBox.warning(self, "Error", "Password must be at least 8 characters long!")
+            return
 
         if password != confpass:
             QtWidgets.QMessageBox.warning(self, "Error", "Passwords do not match!")
             return
+        
+        self.controller.current_user = username
+        self.controller.current_email = email
 
         self.close()
         self.controller.show_signup_tell()
 
     def handle_login(self):
         self.controller.show_login()
+

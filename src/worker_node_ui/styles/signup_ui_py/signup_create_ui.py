@@ -81,7 +81,7 @@ class Ui_signup_create(object):
         self.email_field = QLineEdit(self.centralwidget)
         self.email_field.setObjectName("email_field")
         self.email_field.setGeometry(QRect(810, 300, 451, 41))
-        self.email_field.setFont(QFont("Segoe UI", 13))
+        self.email_field.setFont(QFont("Segoe UI", 9))
         self.email_field.setStyleSheet("QLineEdit { border: 1px solid white; background: #00031F; color: white; padding: 8px; border-radius: 10px; }")
 
         self.username_field = QLineEdit(self.centralwidget)
