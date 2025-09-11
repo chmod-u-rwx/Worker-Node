@@ -87,4 +87,4 @@ class JobExecutor():
         
         return args_string.strip()
             
-executor = JobExecutor()
+executor = JobExecutor() # causes tests to not be discovered
