@@ -102,6 +102,7 @@ class QemuPool:
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
             path = Path("./test/path") # update this
             qemu = QemuController(path, 1, memory_per_machine)
+            qemu.start()
             self.warm_queue.append(qemu)
 
 qemu_pool = QemuPool()

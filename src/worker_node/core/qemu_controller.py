@@ -56,7 +56,8 @@ class QemuController:
             time.sleep(0.5)
             if self.proc.poll() is not None:
                 raise RuntimeError(f"Failed to start QEMU process due to an error in the command. Return Code {self.proc.returncode}")
-            
+                
+            self.ssh = paramiko.SSHClient()
             if (self.wait_for_ssh_connection()):
                 self.boot_time = (time.perf_counter() - start_time)*1000
 

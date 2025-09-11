@@ -7,7 +7,7 @@ from ..models.payloads import JobRequestPayload, JobResponsePayload
 
 class JobExecutor():
     def __init__(self) -> None:
-        # qemu_pool._warm_vms() # type: ignore
+        qemu_pool._warm_vms() # type: ignore
         self.local_job_cache = LocalJobCacheService(CACHE_SIZE_ALLOCATED)
 
     def run_job(self, request: JobRequestPayload):
@@ -50,6 +50,8 @@ class JobExecutor():
 
     def build_run_command(self, config: JobConfiguration, request: JobRequestPayload) -> list[str]:
         cmd: list[str] = []
+
+        cmd.append(f"cd /mnt/jobcache/{request.job_id}")
 
         if config.input.type == "http":
             cmd.append("setsid")
