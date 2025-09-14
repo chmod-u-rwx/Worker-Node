@@ -397,3 +397,6 @@ class QemuController:
     def delete(self):
         ...
 
+    def __del__(self):
+        clean_process(self.proc, 1)
+
