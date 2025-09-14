@@ -51,7 +51,7 @@ class JobExecutor():
     def build_run_command(self, config: JobConfiguration, request: JobRequestPayload) -> list[str]:
         cmd: list[str] = []
 
-        cmd.append(f"cd /mnt/jobcache/{request.job_id}")
+        cmd.append(f"cd /mnt/jobcache/{request.job_id} && ")
 
         if config.input.type == "http":
             cmd.append("setsid")
@@ -87,4 +87,13 @@ class JobExecutor():
         
         return args_string.strip()
             
-executor = JobExecutor() # causes tests to not be discovered
+# executor = JobExecutor() # causes tests to not be discovered
+
+
+_executor: JobExecutor | None = None
+
+def get_executor() -> JobExecutor:
+    global _executor
+    if _executor is None:
+        _executor = JobExecutor()
+    return _executor

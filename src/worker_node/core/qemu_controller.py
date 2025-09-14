@@ -66,23 +66,28 @@ class QemuController:
             print(f"VM booted in {self.boot_time:.2f} ms.")
 
         except FileNotFoundError:
-            self.status = QemuStatus.STOPPED
+            self.stop()
             raise RuntimeError("QEMU img not found. Ensure that PATH to img is correct.")
         except Exception as e:
-            self.status = QemuStatus.STOPPED
+            self.stop()
             raise RuntimeError(f"An unexpected error occurred: {str(e)}")
     
     def stop(self):
         if self.status != QemuStatus.STARTED and self.status != QemuStatus.RUNNING:
-            raise RuntimeError("QEMU is not STARTED")
+            print("QEMU is not STARTED")
 
         if self.proc:
-            clean_process(self.proc)
+            try:
+                clean_process(self.proc)
+            except Exception as e:
+                print(f"Errors occured during cleanup: {e}")
 
-            self.status = QemuStatus.STOPPED
             print("VM stopped successfully.")
         else:
-            raise RuntimeError("No QEMU process found")
+            print("No QEMU process found")
+
+        self.status = QemuStatus.STOPPED
+        self.proc = None        
 
     def reset(self) -> None:
         if self.status != QemuStatus.STARTED:
@@ -93,6 +98,7 @@ class QemuController:
             self._send_command_to_qemu_monitor(f"loadvm {self.snapshot_name}")
             self.resume()
         except Exception as e:
+            self.stop()
             raise RuntimeError(f"Failed to reset vm. An unexpected error occured: {e}")
 
     def freeze(self):
@@ -101,7 +107,8 @@ class QemuController:
 
         try:
             self._send_command_to_qemu_monitor("stop")
-        except (RuntimeError, TimeoutError) as e:
+        except Exception as e:
+            self.stop()
             raise RuntimeError("Failed to freeze vm") from e
         
     def resume(self):
@@ -110,7 +117,8 @@ class QemuController:
 
         try:
             self._send_command_to_qemu_monitor("cont")
-        except (RuntimeError, TimeoutError) as e:
+        except Exception as e:
+            self.stop()
             raise RuntimeError("Failed to resume vm") from e
         
     def run_command(self, command:List[str], timeout:int = 30, isHttp: bool = False) -> VMOutput:
@@ -152,6 +160,7 @@ class QemuController:
                 if not isHttp: # if isHttp run_command will return and self.status == RUNNING
                     self.status = QemuStatus.STARTED
 
+        self.stop()
         raise TimeoutError(f"Command execution timed out after {timeout} seconds. Last known error: {error_buffer}")
 
     def create_snapshot(self):
@@ -207,13 +216,7 @@ class QemuController:
                 # return response.text
             
         except requests.RequestException as e:
-            # return {
-            #     "error": str(e),
-            #     "type": type(e).__name__,
-            #     "url": getattr(e.request, "url", None),
-            #     "status_code": getattr(getattr(e, "response", None), "status_code", None)
-            # }
-            return VMOutput(
+           return VMOutput(
                 stderr=str(e),
                 returncode=getattr(getattr(e, "response", None), "status_code", -1)
             )
@@ -221,6 +224,9 @@ class QemuController:
     def get_resource_load(self) -> QemuLoad:
         if self.status != QemuStatus.STARTED:
             raise Exception("Qemu has not yet started")
+        
+        if not self.proc:
+            raise RuntimeError("No QEMU process available")
 
         try:
             result = subprocess.run(["ps", "-p", str(self.proc.pid), "-o", "pcpu=,rss=,pid="],
@@ -295,7 +301,7 @@ class QemuController:
 
     def _start_qemu_no_loadvm(self) -> subprocess.Popen[str]:
         qemu_cmd = self._get_qemu_cmd()
-
+        proc_qemu = None
         try:
             proc_qemu = subprocess.Popen(
                 qemu_cmd,
@@ -307,6 +313,10 @@ class QemuController:
             
         except FileNotFoundError:
             raise RuntimeError("Qemu binary not found. Not installed?")
+        except Exception as e:
+            if proc_qemu:
+                clean_process(proc=proc_qemu)
+            raise RuntimeError(f"Failed to start qemu without snapshot: {e}")
 
     def _wait_qemu_monitor_socket(self, proc_qemu: subprocess.Popen[str], host: str = "127.0.0.1", timeout: int = 10):
         if wait_for_tcp_monitor(host=host, port=self.monitor_tcp_port, timeout=timeout):
@@ -373,6 +383,7 @@ class QemuController:
             self.run_command(command=["mkdir -p /mnt/jobcache"]) # this is where we mount
             self.run_command(command=["mount -t 9p -o trans=virtio jobcache /mnt/jobcache"])
         except Exception as e:
+            self.stop()
             raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
 
     def _listen_for_vm_ip(self, timeout: int=120) -> str:

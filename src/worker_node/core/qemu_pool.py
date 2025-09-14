@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from pathlib import Path
 import time
+from uuid import uuid4
 from .qemu_controller import QemuController
 from .cleanup_manager import register_cleanup
 from ..config import MAX_CPU_COUNT_ALLOCATED, MAX_MEMORY_ALLOCATED
@@ -100,7 +101,8 @@ class QemuPool:
     def _warm_vms(self):
         memory_per_machine = MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
-            path = Path("./test/path") # update this
+            # update qemu.stop to delete this img (or maybe it is qemu.delete?)
+            path = Path(f"./test/{uuid4()}.qcow2")
             qemu = QemuController(path, 1, memory_per_machine)
             qemu.start()
             self.warm_queue.append(qemu)
