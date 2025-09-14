@@ -4,6 +4,7 @@ import time
 import subprocess
 import socket
 import random
+from uuid import UUID, uuid4
 import requests
 from pathlib import Path
 from enum import Enum
@@ -23,10 +24,11 @@ class QemuStatus(Enum):
     RUNNING = 3
 
 class QemuController:
-    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, ) -> None:
+    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, id: UUID = uuid4()) -> None:
         if not os.path.exists(BASE_IMG_FILE):
             raise FileNotFoundError("Base img does not exist")
         
+        self.qemu_id = id
         self.img_path = img_path 
         self.cpu_count = cpu_count
         self.snapshot_name = "basetest"

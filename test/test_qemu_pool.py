@@ -1,6 +1,7 @@
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from uuid import UUID, uuid4
 from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError, QemuCleaned
 from src.worker_node.config import MAX_MEMORY_ALLOCATED, MAX_CPU_COUNT_ALLOCATED
 from src.worker_node.core.qemu_controller import QemuStatus
@@ -8,7 +9,7 @@ from src.worker_node.core.qemu_controller import QemuStatus
 import pytest
 
 class MockQemu:
-    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0) -> None:
+    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, vm_id: UUID = uuid4()) -> None:
         self.img_path = img_path 
         self.cpu_coun = cpu_count
         self.memory_allocated = memory_allocated
