@@ -156,6 +156,5 @@ def test_run_job_integration(executor: JobExecutor, sample_job_request: JobReque
     output = executor.run_job(sample_job_request)
 
     assert output.body == expected
-    ...
 
 

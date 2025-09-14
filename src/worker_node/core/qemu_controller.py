@@ -374,19 +374,22 @@ class QemuController:
         except Exception as e:
             raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
 
-    def _listen_for_vm_ip(self, timeout: int=120) -> str:
+    def _listen_for_vm_ip(self, timeout: int=12) -> str:
         PORT = 9999
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.bind(("", PORT))
+            sock.settimeout(1.0)
 
             start_time = time.perf_counter()
             while (time.perf_counter() - start_time) < timeout:
-                data, _ = sock.recvfrom(1024)
                 try:
+                    data, _ = sock.recvfrom(1024)
                     msg = data.decode("utf-8").strip()
                     return msg
                 except UnicodeDecodeError:
+                    continue
+                except socket.timeout:
                     continue
         # socket auto-closed here
         return ""
