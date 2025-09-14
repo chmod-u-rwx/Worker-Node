@@ -1,13 +1,14 @@
 from typing import Any, Dict
 from ..models.job_configuration import JobConfiguration
-from .qemu_pool import qemu_pool
+from .qemu_pool import QemuPool
 from ..services.local_job_cache_service import LocalJobCacheService
 from ..config import CACHE_SIZE_ALLOCATED
 from ..models.payloads import JobRequestPayload, JobResponsePayload
 
 class JobExecutor():
     def __init__(self) -> None:
-        # qemu_pool._warm_vms() # type: ignore
+        # self.qemu_pool._warm_vms() # type: ignore
+        self.qemu_pool = QemuPool()
         self.local_job_cache = LocalJobCacheService(CACHE_SIZE_ALLOCATED)
 
     def run_job(self, request: JobRequestPayload):
@@ -18,7 +19,7 @@ class JobExecutor():
 
             run_command = self.build_run_command(config, request)
             
-            with qemu_pool.session() as qemu:
+            with self.qemu_pool.session() as qemu:
                 if config.input.type == "bin":
                     output = qemu.run_command(run_command)
                 elif config.input.type == "file":
@@ -51,11 +52,13 @@ class JobExecutor():
     def build_run_command(self, config: JobConfiguration, request: JobRequestPayload) -> list[str]:
         cmd: list[str] = []
 
+        cmd.append(f"cd /mnt/jobcache/{request.job_id} &&")
+
         if config.input.type == "http":
             cmd.append("setsid")
 
-        if config.input.type == "bin":
-            cmd.extend(["sh", "-c", f"echo \"{str(request.body)}\" |"])
+        if config.input.type == "bin" and request.body:
+            cmd.extend(["sh", "-c", "\"", f"echo \"{str(request.body)}\" |"])
 
         cmd.append(config.run.runtime.value)
         cmd.append(config.run.file)
@@ -72,6 +75,9 @@ class JobExecutor():
         if config.input.type == "http":
             cmd.extend([">", "/dev/null", "2>&1", "<", "/dev/null", "&"])
 
+        if config.input.type == "bin" and request.body:
+            cmd.extend("\"")
+
         return cmd
 
     def parse_input_args(self, allowed_args: list[str], input_args: Dict[str, Any]) -> str:
@@ -85,4 +91,3 @@ class JobExecutor():
         
         return args_string.strip()
             
-executor = JobExecutor()

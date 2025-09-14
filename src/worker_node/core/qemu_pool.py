@@ -18,6 +18,7 @@ class QemuPool:
         self.running_queue: list[QemuController] = []
         self.is_cleaned = False  
 
+        self._warm_vms()
         register_cleanup(self.cleanup)
    
     def get_memory_usage(self) -> int:
@@ -36,9 +37,11 @@ class QemuPool:
     def session(self):
         qemu = self.acquire()
         try:
+            qemu.resume()
             yield qemu
         finally:
             qemu.reset()
+            qemu.freeze()
             self.release(qemu)
     
     def acquire(self ) -> QemuController:
@@ -102,6 +105,7 @@ class QemuPool:
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
             path = Path("./test/path") # update this
             qemu = QemuController(path, 1, memory_per_machine)
+            qemu.start()
+            qemu.freeze()
             self.warm_queue.append(qemu)
 
-qemu_pool = QemuPool()

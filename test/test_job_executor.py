@@ -1,3 +1,4 @@
+import ast
 from datetime import datetime
 import hashlib
 from pathlib import Path
@@ -16,7 +17,8 @@ from src.worker_node.models.payloads import MethodEnum
 
 @pytest.fixture
 def executor() -> JobExecutor:
-    exec = JobExecutor()
+    with patch("src.worker_node.core.job_executor.QemuPool", new=MagicMock):
+        exec = JobExecutor()
     return exec
 
 def get_config(path: Path | str):
@@ -42,19 +44,19 @@ def sample_job_file_configuration() -> JobConfiguration:
     config = get_config("./test/fixtures/file_sample_config.yml")
     return config
 
+request = JobRequestPayload(
+                            request_id=uuid4(),
+                            master_id=uuid4(),
+                            worker_id=uuid4(),
+                            job_id=uuid4(), 
+                            path="hello",
+                            method=MethodEnum.GET, 
+                            params={"qty": 2},
+                            body="hello"
+                            )
+
 @pytest.fixture
 def sample_job_request() -> JobRequestPayload:
-    request = JobRequestPayload(
-                                request_id=uuid4(),
-                                master_id=uuid4(),
-                                worker_id=uuid4(),
-                                job_id=uuid4(),
-                                path="hello",
-                                method=MethodEnum.GET, 
-                                params={"qty": 2},
-                                body="hello"
-                                
-                                )
     return request
 
 @pytest.fixture
@@ -62,26 +64,35 @@ def job_configuration(request: Any):
     return request.getfixturevalue(request.param)
 
 def test_run_job_success(executor: JobExecutor, sample_job_request: JobRequestPayload, sample_job_bin_configuration: JobConfiguration, sample_job_file_configuration: JobConfiguration, sample_job_http_configuration: JobConfiguration):
-    with patch("src.worker_node.core.job_executor.qemu_pool.session", new=MagicMock()) as mock_qemu:
-        executor.local_job_cache.cache_job = lambda job_id: None
-        executor.local_job_cache.get_job_configuration = lambda job_id: sample_job_bin_configuration
-        executor.run_job(sample_job_request)
-        mock_qemu.assert_called_once()
-
+    executor.local_job_cache.cache_job = lambda job_id: None
+    executor.local_job_cache.get_job_configuration = lambda job_id: sample_job_bin_configuration
+    executor.run_job(sample_job_request)
+    assert isinstance(executor.qemu_pool, MagicMock)
+    executor.qemu_pool.session.assert_called_once()
 
 @pytest.mark.parametrize(
     "job_configuration, expected_output",
     [
-        ("sample_job_bin_configuration", "sh -c echo \"hello\" | python main.py --sample args --qty 2"),
-        ("sample_job_file_configuration", "python main.py --sample args"),
-        ("sample_job_http_configuration", "setsid python main.py --sample args > /dev/null 2>&1 < /dev/null &"),
+        ("sample_job_bin_configuration",
+         f'cd /mnt/jobcache/{request.job_id} && sh -c " echo "hello" | python main.py --sample args --qty 2 "'),
+        ("sample_job_file_configuration",
+         f'cd /mnt/jobcache/{request.job_id} && python main.py --sample args'),
+        ("sample_job_http_configuration",
+         f'cd /mnt/jobcache/{request.job_id} && setsid python main.py --sample args > /dev/null 2>&1 < /dev/null &'),
     ],
-    indirect=["job_configuration"],  # tells pytest to resolve these as fixtures
+    ids=[
+        "bin_config",
+        "file_config",
+        "http_config",
+    ],
+    indirect=["job_configuration"],
 )
-def test_build_run_command_bin(job_configuration: JobConfiguration, expected_output: str, executor: JobExecutor, sample_job_request: JobRequestPayload):
+def test_build_run_command_bin(job_configuration: JobConfiguration,
+                               expected_output: str,
+                               executor: JobExecutor,
+                               sample_job_request: JobRequestPayload):
     command = executor.build_run_command(job_configuration, sample_job_request)
-    assert " ".join(command) == expected_output
-
+    assert expected_output == " ".join(command)
 
 def test_parse_args(executor: JobExecutor):
     allowed_args = ["--qty", "-v", "--isTrue"] 
@@ -131,8 +142,8 @@ def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_conf
 
 
 @pytest.mark.integration
-def test_run_job_integration(executor: JobExecutor, sample_job_request: JobRequestPayload):
-
+def test_run_job_integration(sample_job_request: JobRequestPayload):
+    executor = JobExecutor()
     sample_job = Job(user_id=uuid4(),
                      job_id=sample_job_request.job_id,
                      job_name="hash_job",
@@ -147,14 +158,14 @@ def test_run_job_integration(executor: JobExecutor, sample_job_request: JobReque
     assert sample_job_request.params["qty"]
     assert sample_job_request.body
 
-    result = sample_job_request.body
+    result = sample_job_request.body + "\n"
     for _ in range(int(sample_job_request.params["qty"])):
         result = hashlib.sha256(result.encode()).hexdigest()
 
-    expected: dict[Any, Any] =  {"input": sample_job_request.body, "result": result}
+    expected: dict[Any, Any] =  {"input": sample_job_request.body + "\n", "result": result}
 
     output = executor.run_job(sample_job_request)
 
-    assert output.body == expected
+    assert ast.literal_eval(output.body) == expected
 
 

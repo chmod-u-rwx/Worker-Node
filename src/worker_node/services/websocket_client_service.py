@@ -5,7 +5,7 @@ from uuid import  UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
 from ..models.payloads import WebsocketMessage, MessageType, JobRequestPayload
-from ..core.job_executor import executor
+from ..core.job_executor import JobExecutor
 
 class MasterNodeDiscoveryError(Exception):
     ...
@@ -28,6 +28,7 @@ class WebsocketClientService:
         self.websocket = None
         self.max_reconnect_attempts = max_reconnect_attempts
         self.current_websocket_url = None
+        self.executor = JobExecutor()
     
     async def connect(
         self,
@@ -91,7 +92,7 @@ class WebsocketClientService:
 
     async def handle_job_rpc_request(self, job_request: JobRequestPayload):
 
-        payload = executor.run_job(job_request)
+        payload = self.executor.run_job(job_request)
 
         # # Dummy simulation of running job in qemu controller
         # await asyncio.sleep(2)
@@ -172,4 +173,4 @@ class WebsocketClientService:
             print(f"Discovered master node websocket at: {websocket_url}")
             return websocket_url
         
-worker_ws_client = WebsocketClientService(UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+# worker_ws_client = WebsocketClientService(UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
