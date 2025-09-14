@@ -391,6 +391,71 @@ class QemuController:
                     continue
         # socket auto-closed here
         return ""
+    
+    def _check_mounted_cgroup(self, timeout:int = 10) -> None:
+        # just raise if there is no cgroup mounted
+        result = self.run_command(command=["sh", "-c", "mount | grep cgroup"], timeout=timeout)
+        if result.returncode != 0 or "cgroup" not in result.stdout:
+            raise RuntimeError("Cgroup is not mounted in the VM. Do initialize mounted cgroup.")
+            
+    def _check_enabled_cgroup_controllers(self) -> None:
+        result = self.run_command(command=["cat", "/sys/fs/cgroup/cgroup.controllers"])
+        if result.returncode != 0:
+            raise RuntimeError("Failed to read cgroup controllers in the VM.")
+        
+        if result.stdout== "":
+            self._enable_cgroup_controllers(cpu=True, memory=True, cpuset=True)
+
+        controllers = result.stdout.split()
+        if "cpu" not in controllers:
+            raise RuntimeError("CPU controller is not enabled in the VM cgroup.")
+        if "memory" not in controllers:
+            raise RuntimeError("Memory controller is not enabled in the VM cgroup.")
+        if "cpuset" not in controllers:
+            raise RuntimeError("Cpuset controller is not enabled in the VM cgroup.")
+        
+    def _enable_cgroup_controllers(self, cpu: bool = True, memory: bool = True, cpuset: bool = True) -> None:
+        controllers: list[str]= []
+        if cpu:
+            controllers.append("+cpu")
+        if memory:
+            controllers.append("+memory")
+        if cpuset:
+            controllers.append("+cpuset")
+        
+        if not controllers:
+            return
+        
+        controller_str = " ".join(controllers)
+        try:
+            self.run_command(command=[f"echo +{controller_str} > /sys/fs/cgroup/cgroup.subtree_control"])
+        except Exception as e:
+            raise RuntimeError(f"Failed to enable cgroup controllers in the VM: {e}")
+        
+    def _init_mounted_cgroup(self, group_name: str = "limiter") -> None:
+        try:
+            self.CGROUP_PATH = f"/sys/fs/cgroup"
+            self._check_mounted_cgroup() # stop and raise if not mounted
+            
+            self.run_command(command=[f"mkdir -p {self.CGROUP_PATH}"])
+            self.run_command(command=["mount", "-t", "cgroup2", "none", f"{self.CGROUP_PATH}"])
+
+            self._check_enabled_cgroup_controllers() # stop and raise if controllers not enabled
+            
+            self.run_command(command=[f"mkdir -p {self.CGROUP_PATH}/{group_name}"]) # create the group
+            self.run_command(command=[f"echo $$ > {self.CGROUP_PATH}/{group_name}/cgroup.procs"]) # add current process(terminal) to the group
+        except Exception as e:
+            raise RuntimeError(f"Failed to mount cgroup in the VM: {e}")
+    
+    def _update_cgroup_limits(self, group_name: str = "limiter", cpu_limit: int = 50, memory_limit: int = 256) -> None:
+        path = f"{self.CGROUP_PATH}/{group_name}"
+        self._check_mounted_cgroup()
+
+        try:
+            self.run_command(command=[f"echo {cpu_limit} > {path}/cpu.max"]) # cpu limit in percentage
+            self.run_command(command=[f"echo {memory_limit * 1024 * 1024} > {path}/memory.max"]) # memory limit in bytes
+        except Exception as e:
+            raise RuntimeError(f"Failed to update cgroup limits in the VM: {e}")
 
     def delete(self):
         ...
