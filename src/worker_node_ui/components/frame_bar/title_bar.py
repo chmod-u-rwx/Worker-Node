@@ -14,9 +14,8 @@ class TitleBar(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
-        
 
-        layout.addStretch()  # push buttons to the right
+        layout.addStretch()
 
         btn_style = """
             QPushButton {
@@ -29,20 +28,18 @@ class TitleBar(QWidget):
 
         self.min_btn = QPushButton("—")
         self.min_btn.setStyleSheet(btn_style + "QPushButton:hover { background: #ffbd2e; }")
-        self.min_btn.clicked.connect(self.parent_window.showMinimized)
+        self.min_btn.clicked.connect(self.parent_window.showMinimized)  # type: ignore
         layout.addWidget(self.min_btn)
 
         self.fullscreen_btn = QPushButton("☐")
-        self.fullscreen_btn.setStyleSheet(btn_style)
-        self.fullscreen_btn.setEnabled(False)  # disabled look
+        self.fullscreen_btn.setStyleSheet(btn_style + "QPushButton:hover { background: #7D5FFF; }")
+        self.fullscreen_btn.setEnabled(False)
         layout.addWidget(self.fullscreen_btn)
 
         self.close_btn = QPushButton("X")
         self.close_btn.setStyleSheet(btn_style + "QPushButton:hover { background: red; }")
-        self.close_btn.clicked.connect(self.parent_window.close)
+        self.close_btn.clicked.connect(self.parent_window.close)  # type: ignore
         layout.addWidget(self.close_btn)
-
-        self.drag_pos = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -50,8 +47,7 @@ class TitleBar(QWidget):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton and self.drag_pos:
+            delta = event.globalPosition().toPoint() - self.drag_pos
             if self.parent_window:
-                self.parent_window.move(
-                    self.parent_window.pos() + event.globalPosition().toPoint() - self.drag_pos
-            )
-        self.drag_pos = event.globalPosition().toPoint()
+                self.parent_window.move(self.parent_window.pos() + delta)
+            self.drag_pos = event.globalPosition().toPoint()
