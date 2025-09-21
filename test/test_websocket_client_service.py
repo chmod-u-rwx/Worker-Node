@@ -1,25 +1,26 @@
-# import json
-# import httpx
-# import pytest
-# from unittest.mock import AsyncMock, Mock, patch
-# from uuid import uuid4, UUID
-# from websockets import ConnectionClosed, WebSocketException
-# from src.worker_node.models.master_node import MasterNode
-# from src.worker_node.services.websocket_client_service import (
-#     WebsocketClientService,
-#     MasterNodeNotFound,
-#     MasterNodeInvalidResponse,
-#     MasterNodeDiscoveryError,
-# )
-# from src.worker_node.models.payloads import JobRequestPayload, MessageType, MethodEnum, WebsocketMessage
+import json
+import httpx
+import pytest
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from uuid import uuid4, UUID
+from websockets import ConnectionClosed, WebSocketException
+from src.worker_node.models.master_node import MasterNode
+from src.worker_node.services.websocket_client_service import (
+    WebsocketClientService,
+    MasterNodeNotFound,
+    MasterNodeInvalidResponse,
+    MasterNodeDiscoveryError,
+)
+from src.worker_node.models.payloads import JobRequestPayload, MessageType, MethodEnum, WebsocketMessage
 
 # @pytest.fixture
 # def worker_id():
 #     return uuid4()
 
-# @pytest.fixture
-# def websocket_service(worker_id: UUID):
-#     return WebsocketClientService(worker_id=worker_id, max_reconnect_attempts=3)
+@pytest.fixture
+def websocket_service(worker_id: UUID):
+    with patch("src.worker_node.services.websocket_client_service.JobExecutor", MagicMock):
+        yield WebsocketClientService(worker_id=worker_id, max_reconnect_attempts=3)
 
 # @pytest.fixture
 # def mock_websocket():
@@ -38,18 +39,16 @@
 
 # class TestWebsocketClientService:
     
-#     def test_init_with_uuid_object(self):
-#         worker_id = uuid4()
-#         service = WebsocketClientService(worker_id=worker_id)
-#         assert service.worker_id == str(worker_id)
-#         assert service.websocket is None
-#         assert service.max_reconnect_attempts == 3
-#         assert service.current_websocket_url is None
+    def test_init_with_uuid_object(self, websocket_service: WebsocketClientService):
+        worker_id = uuid4()
+        websocket_service = WebsocketClientService(worker_id=worker_id)
+        assert websocket_service.worker_id == str(worker_id)
+        assert websocket_service.websocket is None
+        assert websocket_service.max_reconnect_attempts == 3
+        assert websocket_service.current_websocket_url is None
     
-#     def test_init_with_custom_max_reconnect_attempts(self):
-#         worker_id = uuid4()
-#         service = WebsocketClientService(worker_id=worker_id, max_reconnect_attempts=5)
-#         assert service.max_reconnect_attempts == 5
+    def test_init_with_custom_max_reconnect_attempts(self, websocket_service: WebsocketClientService):
+        assert websocket_service.max_reconnect_attempts == 3
     
 #     @pytest.mark.asyncio
 #     async def test_discover_master_node_success(

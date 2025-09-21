@@ -4,6 +4,7 @@ import time
 import subprocess
 import socket
 import random
+from uuid import UUID, uuid4
 import requests
 from pathlib import Path
 from enum import Enum
@@ -23,10 +24,11 @@ class QemuStatus(Enum):
     RUNNING = 3
 
 class QemuController:
-    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, ) -> None:
+    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, id: UUID = uuid4()) -> None:
         if not os.path.exists(BASE_IMG_FILE):
             raise FileNotFoundError("Base img does not exist")
         
+        self.qemu_id = id
         self.img_path = img_path 
         self.cpu_count = cpu_count
         self.snapshot_name = "basetest"
@@ -375,19 +377,22 @@ class QemuController:
         except Exception as e:
             raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
 
-    def _listen_for_vm_ip(self, timeout: int=120) -> str:
+    def _listen_for_vm_ip(self, timeout: int=12) -> str:
         PORT = 9999
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.bind(("", PORT))
+            sock.settimeout(1.0)
 
             start_time = time.perf_counter()
             while (time.perf_counter() - start_time) < timeout:
-                data, _ = sock.recvfrom(1024)
                 try:
+                    data, _ = sock.recvfrom(1024)
                     msg = data.decode("utf-8").strip()
                     return msg
                 except UnicodeDecodeError:
+                    continue
+                except socket.timeout:
                     continue
         # socket auto-closed here
         return ""
@@ -500,4 +505,7 @@ class QemuController:
 
     def delete(self):
         ...
+
+    def __del__(self):
+        clean_process(self.proc, 1)
 

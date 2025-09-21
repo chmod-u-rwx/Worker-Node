@@ -1,9 +1,10 @@
 from contextlib import contextmanager
 from pathlib import Path
 import time
+from uuid import uuid4
 from .qemu_controller import QemuController
 from .cleanup_manager import register_cleanup
-from ..config import MAX_CPU_COUNT_ALLOCATED, MAX_MEMORY_ALLOCATED
+from ..config import MAX_CPU_COUNT_ALLOCATED, MAX_MEMORY_ALLOCATED, VM_IMG_INSTANCES_PATH
 
 class QemuPoolEmptyError(Exception):
     ...
@@ -18,6 +19,7 @@ class QemuPool:
         self.running_queue: list[QemuController] = []
         self.is_cleaned = False  
 
+        self._warm_vms()
         register_cleanup(self.cleanup)
    
     def get_memory_usage(self) -> int:
@@ -36,9 +38,11 @@ class QemuPool:
     def session(self):
         qemu = self.acquire()
         try:
+            qemu.resume()
             yield qemu
         finally:
             qemu.reset()
+            qemu.freeze()
             self.release(qemu)
     
     def acquire(self ) -> QemuController:
@@ -100,9 +104,11 @@ class QemuPool:
     def _warm_vms(self):
         memory_per_machine = MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
-            path = Path("./test/path") # update this
-            qemu = QemuController(path, 1, memory_per_machine)
+
+            vm_id = uuid4()
+            path = Path(f"{VM_IMG_INSTANCES_PATH}/{vm_id}.qcow2") # update this
+            qemu = QemuController(path, 1, memory_per_machine, vm_id)
             qemu.start()
+            qemu.freeze()
             self.warm_queue.append(qemu)
 
-qemu_pool = QemuPool()
