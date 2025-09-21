@@ -4,6 +4,8 @@ from .qemu_pool import QemuPool
 from ..services.local_job_cache_service import LocalJobCacheService
 from ..config import CACHE_SIZE_ALLOCATED
 from ..models.payloads import JobRequestPayload, JobResponsePayload
+from ..core.qemu_controller import QemuStatus
+import time
 
 class JobExecutor():
     def __init__(self) -> None:
@@ -26,18 +28,26 @@ class JobExecutor():
                     self.local_job_cache.create_file(request.job_id, config.input.path, request.model_dump(mode="json"))
                     output = qemu.run_command(run_command)
                 elif config.input.type == "http":
-                    qemu.run_command(run_command)
+                    print("Running http server..")
+                    qemu.run_command(run_command, isHttp=True)
+                    print("Run success")
                     assert request.method
+                    print("Sending request to server...")
                     output = qemu.send_http_request_to_vm(request.method.value, request.path, config.input.port, request.params, request.body, request.headers)
+                    print("Sent successfully!")
+                    print("output: ", output)
+                    qemu.status = QemuStatus.STARTED
                 else:
                     raise Exception("Unsupported Type")
             
-            status_code = self.parse_status_code(config.error_map, output.returncode)
-            is_error = self.is_error(status_code)
+            # output.returncode returns status code
+            # status_code = self.parse_status_code(config.error_map, output.returncode)
+            is_error = self.is_error(output.returncode)
             body = output.stderr if is_error else output.stdout
             meta: dict[Any, Any] = {"stdin": output.stdin, "runtime": output.runtime}
 
-            response = JobResponsePayload(job_id=request.job_id, master_id=request.master_id, worker_id=request.worker_id, request_id=request.request_id, status_code=status_code, body=body, meta=meta)
+            response = JobResponsePayload(job_id=request.job_id, master_id=request.master_id, worker_id=request.worker_id, request_id=request.request_id, status_code=output.returncode, body=body, meta=meta)
+            print("Returning job response")
             return response
         except Exception as e:
             response = JobResponsePayload(job_id=request.job_id, master_id=request.master_id, worker_id=request.worker_id, request_id=request.request_id, status_code=500, body=str(e))
@@ -55,6 +65,11 @@ class JobExecutor():
         cmd.append(f"cd /mnt/jobcache/{request.job_id} &&")
 
         if config.input.type == "http":
+            # Band aid magic
+            cmd.append("python -m venv .venv &&") # create venv
+            cmd.append("source .venv/bin/activate &&") # use venv
+            cmd.append("pip install -r requirements.txt &&") # install requirements
+
             cmd.append("setsid")
 
         if config.input.type == "bin" and request.body:
@@ -90,4 +105,3 @@ class JobExecutor():
                 args_string += f"{args} {input_args.get(stripped_args)} "
         
         return args_string.strip()
-            
