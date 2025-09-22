@@ -1,11 +1,13 @@
 import json
 import websockets
+import httpx
 from typing import  Optional
 from uuid import  UUID
 from websockets.exceptions import ConnectionClosed, WebSocketException
-
+from ..models.master_node import MasterNode
 from ..models.payloads import WebsocketMessage, MessageType, JobRequestPayload
 from ..core.job_executor import JobExecutor
+from ..config import CORE_API_URI
 
 class MasterNodeDiscoveryError(Exception):
     ...
@@ -168,9 +170,13 @@ class WebsocketClientService:
         #         master_address = str(master_node.master_address)
         #     except httpx.RequestError as e:
         #         raise MasterNodeDiscoveryError(f"HTTP request failed: {e}") from e
-            
+
+        #     websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
+        #     print(f"Discovered master node websocket at: {websocket_url}")
+        #     return websocket_url
+
             websocket_url = f"ws://0.0.0.0:8020/ws/connect/{self.worker_id}"
             print(f"Discovered master node websocket at: {websocket_url}")
             return websocket_url
         
-# worker_ws_client = WebsocketClientService(UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+worker_ws_client = WebsocketClientService(UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"))

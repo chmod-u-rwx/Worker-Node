@@ -1,5 +1,6 @@
 import ast
 from datetime import datetime
+import time
 import hashlib
 from pathlib import Path
 from typing import Any
@@ -55,13 +56,27 @@ request = JobRequestPayload(
                             body="hello"
                             )
 
+http_job_request = JobRequestPayload(
+                            request_id=uuid4(),
+                            master_id=uuid4(),
+                            worker_id=uuid4(),
+                            job_id=uuid4(), 
+                            path="health",
+                            method=MethodEnum.GET, 
+                            body=None
+                            )
+
 @pytest.fixture
 def sample_job_request() -> JobRequestPayload:
     return request
 
-# @pytest.fixture
-# def job_configuration(request: Any):
-#     return request.getfixturevalue(request.param)
+@pytest.fixture
+def sample_http_job_request() -> JobRequestPayload:
+    return http_job_request
+
+@pytest.fixture
+def job_configuration(request: Any):
+    return request.getfixturevalue(request.param)
 
 def test_run_job_success(executor: JobExecutor, sample_job_request: JobRequestPayload, sample_job_bin_configuration: JobConfiguration, sample_job_file_configuration: JobConfiguration, sample_job_http_configuration: JobConfiguration):
     executor.local_job_cache.cache_job = lambda job_id: None
@@ -164,5 +179,28 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
     expected: dict[Any, Any] =  {"input": sample_job_request.body + "\n", "result": result}
 
 #     output = executor.run_job(sample_job_request)
+
+
+@pytest.mark.integration
+def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
+    executor = JobExecutor()
+    sample_job = Job(user_id=uuid4(),
+                     job_id=sample_http_job_request.job_id,
+                     job_name="http_job",
+                     job_description=" test",
+                     repo_url=HttpUrl("https://github.com/chmod-u-rwx/Http-Sample-Project.git"),
+                     created_at=datetime.now(),
+                     updated_at=datetime.now())
+
+    executor.local_job_cache.fetch_job_information = lambda job_id: sample_job
+
+    t1 = time.time()
+    output = executor.run_job(sample_http_job_request)
+    t2 = time.time()
+
+    f = t2 - t1
+
+    assert output.status_code == 200
+    assert output.body == "healthy"
 
     assert ast.literal_eval(output.body) == expected

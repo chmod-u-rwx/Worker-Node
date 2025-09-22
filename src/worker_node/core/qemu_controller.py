@@ -175,50 +175,58 @@ class QemuController:
                                 port: int,
                                 query_params: Optional[dict[str, Any]] = None,
                                 body: Optional[dict[str, Any]] = None,  
-                                headers: Optional[dict[str, str]] = None, 
+                                headers: Optional[dict[str, str]] = None,
+                                timeout: int = 60,
+                                retry_interval: float = 1
                                 ) -> VMOutput:
 
         if self.status != QemuStatus.RUNNING:
-            raise RuntimeError("Qemu has not yet started.") 
+            raise RuntimeError("Qemu is not yet running.") 
 
-        url = f"http://{self.vm_ip}:{port}{path}"
+        url = f"http://{self.vm_ip}:{port}/{path}"
+        start = time.time()
 
-        try:
-            response = requests.request(
-                method=method,
-                url=url,
-                params=query_params,
-                json=body,
-                headers=headers
-                )
+        while True:
 
-            # if response is an http error, raise it
-            response.raise_for_status()
-
-            # useful if server doesnt return json response
             try:
+                response = requests.request(
+                    method=method,
+                    url=url,
+                    params=query_params,
+                    json=body,
+                    headers=headers,
+                    timeout=10
+                    )
+
+                # if response is an http error, raise it
+                response.raise_for_status()
+
+                # useful if server doesnt return json response
+                try:
+                    stdout = response.json()
+                except:
+                    stdout = response.text
+
                 return VMOutput(
-                    stdout=response.json(),
+                    stdout=stdout,
                     returncode=response.status_code
                 )
-            except ValueError:
+
+            except requests.ConnectionError as e:
+                # Server isnt always immediately ready
+                if time.time() - start > timeout:
+                    return VMOutput(
+                        stderr=str(e),
+                        returncode=500
+                    )
+                time.sleep(retry_interval)
+                continue
+                
+            except requests.RequestException as e:
                 return VMOutput(
-                    stdout=response.text,
-                    returncode=response.status_code
+                    stderr=str(e),
+                    returncode=getattr(getattr(e, "response", None), "status_code", 500)
                 )
-                # return response.text
-            
-        except requests.RequestException as e:
-            # return {
-            #     "error": str(e),
-            #     "type": type(e).__name__,
-            #     "url": getattr(e.request, "url", None),
-            #     "status_code": getattr(getattr(e, "response", None), "status_code", None)
-            # }
-            return VMOutput(
-                stderr=str(e),
-                returncode=getattr(getattr(e, "response", None), "status_code", -1)
-            )
 
     def get_resource_load(self) -> QemuLoad:
         if self.status != QemuStatus.STARTED:
@@ -377,7 +385,7 @@ class QemuController:
         except Exception as e:
             raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
 
-    def _listen_for_vm_ip(self, timeout: int=12) -> str:
+    def _listen_for_vm_ip(self, timeout: int=120) -> str:
         PORT = 9999
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

@@ -26,7 +26,9 @@ class LocalJobCacheService:
 
     def cache_job(self, job_id: UUID4):
         if self.is_job_cached(job_id):
-            raise AlreadyExists("Job already cached")
+            # raise AlreadyExists("Job already cached")
+            print("Job already cached")
+            return
         try:
             job = self.fetch_job_information(job_id)
             self.job_metadata_db.insert(job)
@@ -59,7 +61,8 @@ class LocalJobCacheService:
     
     def fetch_job_information(self, job_id: UUID4) -> Job:
         try:
-            response = requests.get(f"{CORE_API_URI}/jobs/get/{job_id}")
+            response = requests.get(f"{CORE_API_URI}/job/get/{job_id}")
+            print(f"\n\n\n{CORE_API_URI}/job/get/{job_id}")
 
             if response.status_code == 404:
                 raise JobNotFound("Job does not exist") 
