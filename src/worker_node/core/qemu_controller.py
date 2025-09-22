@@ -17,7 +17,6 @@ from ..helpers.socket import wait_for_tcp_monitor, get_free_port
 from ..config import BASE_IMG_FILE, VIRTUALIZATION, LOCAL_JOB_REPOSITORY_CACHE_PATH
 from ..models.vm_output import VMOutput
 import paramiko 
-import sys
 
 class QemuStatus(Enum):
     STARTED = 1
@@ -32,22 +31,16 @@ class QemuController:
         self.qemu_id = id
         self.img_path = img_path 
         self.cpu_count = cpu_count
-        self.snapshot_name = "windows"
+        self.snapshot_name = "basetest"
         self.memory_allocated = memory_allocated
         self.status = QemuStatus.STOPPED
         self.boot_time = 0
         self.ssh = paramiko.SSHClient()
         self.monitor_tcp_port = get_free_port()
 
-        self.win_setup_runtime = 1 # only run once upon first qemu command call
-        self.win_smb_point_name = "CCqemu"
-        self.win_smb_username = "cc_qemu"
-        self.win_smb_password = "qemu"
-
         # Copy the base img file into img_path
         shutil.copy(BASE_IMG_FILE, img_path)
         self.create_snapshot()
-        
 
     def start(self):
         if self.img_path.exists() == False:
@@ -255,9 +248,9 @@ class QemuController:
         Loads self.snapshot if loadvm = True
         """
         
-        accel = "tcg" if VIRTUALIZATION == "darwin" or VIRTUALIZATION == "windows" else "kvm:tcg,usb=off"
-        cpu = "max" if VIRTUALIZATION == "darwin" else "host" if VIRTUALIZATION == "linux" else "qemu64"
-        netdev = "vmnet-bridged,ifname=en0,id=net0" if VIRTUALIZATION == "darwin" else "bridge,id=net0,br=br0" if VIRTUALIZATION == "linux" else "tap,id=net0,ifname=TAP0,script=no,downscript=no"
+        accel = "tcg" if VIRTUALIZATION == "darwin" else "kvm:tcg,usb=off"
+        cpu = "max" if VIRTUALIZATION == "darwin" else "host"
+        netdev = "vmnet-bridged,ifname=en0,id=net0" if VIRTUALIZATION == "darwin" else "bridge,id=net0,br=br0"
         mac_address = self._generate_mac_address()
 
         # Enables TCP qemu monitor
@@ -276,23 +269,15 @@ class QemuController:
             "-chardev", monitor_chardev,
             "-mon", monitor,
             "-serial", "mon:stdio", 
+            "-fsdev", f"local,id=fsdev0,path={LOCAL_JOB_REPOSITORY_CACHE_PATH},security_model=none",
+            "-device", "virtio-9p-pci,fsdev=fsdev0,mount_tag=jobcache",
             "-nographic"
         ]
 
         if VIRTUALIZATION == "linux":
             cmd.append("-enable-kvm")
-            cmd.extend(["-fsdev", f"local,id=fsdev0,path={LOCAL_JOB_REPOSITORY_CACHE_PATH},security_model=none"])
-            cmd.extend(["-device", "virtio-9p-pci,fsdev=fsdev0,mount_tag=jobcache"])
-        elif VIRTUALIZATION == "darwin":
-            cmd.insert(0, "sudo") # sudo is required for macos
-            cmd.extend(["-fsdev", f"local,id=fsdev0,path={LOCAL_JOB_REPOSITORY_CACHE_PATH},security_model=none"])
-            cmd.extend(["-device", "virtio-9p-pci,fsdev=fsdev0,mount_tag=jobcache"])
         else:
-            while(self.win_setup_runtime == 1):
-                subprocess.run([sys.executable, "-m", "src.worker_node.win_setup.win_tap"])
-                subprocess.run([sys.executable, "-m", "src.worker_node.win_setup.win_smb", str(LOCAL_JOB_REPOSITORY_CACHE_PATH),
-                                "--smb_name", self.win_smb_point_name, "--username", self.win_smb_username, "--password", self.win_smb_password])
-                self.win_setup_runtime -= 1
+            cmd.insert(0, "sudo") # sudo is required for macos
 
         if loadvm:
             cmd.extend(["-loadvm", self.snapshot_name])
@@ -387,15 +372,11 @@ class QemuController:
     def _mount_local_job_repo_cache(self):
         try:
             self.run_command(command=["mkdir -p /mnt/jobcache"]) # this is where we mount
-            if VIRTUALIZATION == "windows":
-                win_username = os.environ.get("COMPUTERNAME")
-                self.run_command(command=[f"mount -t cifs //{win_username}/{self.win_smb_point_name} /mnt/jobcache -o username={self.win_smb_username},password={self.win_smb_password},vers=3.0"])
-            else:
-                self.run_command(command=["mount -t 9p -o trans=virtio jobcache /mnt/jobcache"])
+            self.run_command(command=["mount -t 9p -o trans=virtio jobcache /mnt/jobcache"])
         except Exception as e:
             raise RuntimeError(f"Failed to mount local job repository cache path in /mnt/jobcache: {e}")
 
-    def  _listen_for_vm_ip(self, timeout: int=120) -> str:
+    def _listen_for_vm_ip(self, timeout: int=12) -> str:
         PORT = 9999
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

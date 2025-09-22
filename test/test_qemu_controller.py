@@ -11,7 +11,6 @@ from unittest.mock import patch, MagicMock
 import requests
 from src.worker_node.models.qemu_load import QemuLoad
 from src.worker_node.core.qemu_controller import QemuController, QemuStatus
-from src.worker_node.config import VIRTUALIZATION, LOCAL_JOB_REPOSITORY_CACHE_PATH
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -61,21 +60,12 @@ def test_qemu_start(test_img: Path):
     try:
         qemu.start()
         assert qemu.status == QemuStatus.STARTED
-        
-        if VIRTUALIZATION == "linux" or VIRTUALIZATION == "darwin":
-            proc_check = subprocess.run(
-                ["pgrep", "-f", "qemu-system-x86_64"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-        else:  # Windows
-            proc_check = subprocess.run(
-                ["powershell", "-Command", "Get-Process | Where-Object { $_.Path -like '*qemu-system-x86_64*' } | Select-Object Id, ProcessName, Path"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
+        proc_check = subprocess.run(
+            ["pgrep", "-f", "qemu-system-x86_64"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         assert proc_check.returncode is not None, "QEMU process did not start at all"
         assert qemu.wait_for_ssh_connection() == None, "SSH connection failed after starting QEMU"
     finally:
@@ -402,25 +392,24 @@ def test_reset_vm_unexpected_error():
             assert "Failed to reset vm" in str(e)
 
 def test_mount_local_job_repository_cache_vm_creates_file(tmp_path: Path, test_img: Path):
-    if not VIRTUALIZATION == "windows":
-        with patch(
-            "src.worker_node.core.qemu_controller.LOCAL_JOB_REPOSITORY_CACHE_PATH",
-            str(tmp_path) # tmp_path is in the host file system
-        ):
-            qemu = QemuController(test_img)
-            uuid = str(uuid4())
-            try:
-                qemu.start()
-                qemu.run_command(command=[f"echo {uuid} >> /mnt/jobcache/test.txt"])
-                assert os.path.exists(f"{tmp_path}/test.txt")
+    with patch(
+        "src.worker_node.core.qemu_controller.LOCAL_JOB_REPOSITORY_CACHE_PATH",
+        str(tmp_path) # tmp_path is in the host file system
+    ):
+        qemu = QemuController(test_img)
+        uuid = str(uuid4())
+        try:
+            qemu.start()
+            qemu.run_command(command=[f"echo {uuid} >> /mnt/jobcache/test.txt"])
+            assert os.path.exists(f"{tmp_path}/test.txt")
 
-                with open(tmp_path / "test.txt", "r") as f:
-                    content = f.readlines()
+            with open(tmp_path / "test.txt", "r") as f:
+                content = f.readlines()
 
-                assert uuid in " ".join(content)
-            
-            finally:
-                qemu.stop()
+            assert uuid in " ".join(content)
+        
+        finally:
+            qemu.stop()
 
 def test_mount_local_job_repository_host_creates_file(tmp_path: Path, test_img: Path):
     with patch(
@@ -429,15 +418,9 @@ def test_mount_local_job_repository_host_creates_file(tmp_path: Path, test_img: 
     ):
         uuid = str(uuid4())
         qemu = QemuController(test_img)
-
-        if VIRTUALIZATION == 'windows':
-            with open(LOCAL_JOB_REPOSITORY_CACHE_PATH / "test.txt", "w") as f:
-                f.write(f"{uuid}")
-                f.flush()
-        else:
-            with open(tmp_path / "test.txt", "w") as f:
-                f.write(f"{uuid}")
-                f.flush()
+        with open(tmp_path / "test.txt", "w") as f:
+            f.write(f"{uuid}")
+            f.flush()
 
         try:
             qemu.start()
@@ -448,9 +431,6 @@ def test_mount_local_job_repository_host_creates_file(tmp_path: Path, test_img: 
             output = qemu.run_command(command=["cat /mnt/jobcache/test.txt"]) 
             assert uuid in output.stdout  
         finally:
-            if VIRTUALIZATION == 'windows':
-                with open(LOCAL_JOB_REPOSITORY_CACHE_PATH / "test.txt", "w") as f:
-                    f.truncate()
             qemu.stop()
 
 def test_mount_local_job_repo_host_creates_file_while_vm_running(tmp_path: Path, test_img: Path):
@@ -465,15 +445,9 @@ def test_mount_local_job_repo_host_creates_file_while_vm_running(tmp_path: Path,
             output = qemu.run_command(command=["test -f /mnt/jobcache/test.txt && echo 'exists'"])
             assert "exists" not in output.stdout
 
-            if VIRTUALIZATION == 'windows':
-                with open(LOCAL_JOB_REPOSITORY_CACHE_PATH / "test.txt", "w") as f:
-                    f.write(f"{uuid}")
-                    f.flush()
-                    time.sleep(1)
-            else:
-                with open(tmp_path / "test.txt", "w") as f:
-                    f.write(f"{uuid}")
-                    f.flush()
+            with open(tmp_path / "test.txt", "w") as f:
+                f.write(f"{uuid}")
+                f.flush()
 
             output = qemu.run_command(command=["test -f /mnt/jobcache/test.txt && echo 'exists'"])
             assert "exists" in output.stdout
@@ -481,9 +455,6 @@ def test_mount_local_job_repo_host_creates_file_while_vm_running(tmp_path: Path,
             output = qemu.run_command(command=["cat /mnt/jobcache/test.txt"]) 
             assert uuid in output.stdout  
         finally:
-            if VIRTUALIZATION == 'windows':
-                with open(LOCAL_JOB_REPOSITORY_CACHE_PATH / "test.txt", "w") as f:
-                    f.truncate()
             qemu.stop()
 
 def test_failed_to_mount_local_job_repo_cache(tmp_path: Path):
