@@ -11,7 +11,7 @@ MAX_CPU_COUNT_ALLOCATED = int(os.getenv("MAX_CPU_COUNT_ALLOCATED", 0))
 BASE_IMG_FILE = str(os.environ["BASE_IMG_FILE"])
 VIRTUALIZATION = platform.system().lower()
 
-if VIRTUALIZATION not in ["darwin", "linux", "windows"]:
+if VIRTUALIZATION not in ["darwin", "linux"]:
 	raise ValueError(f"Unsupported OS: {VIRTUALIZATION}")
 
 if MAX_MEMORY_ALLOCATED == 0 and MAX_CPU_COUNT_ALLOCATED == 0:
