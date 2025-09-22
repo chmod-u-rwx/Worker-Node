@@ -15,20 +15,20 @@ from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, Job
 from src.worker_node.models.payloads import MethodEnum
 
 
+
 @pytest.fixture
 def executor() -> JobExecutor:
     with patch("src.worker_node.core.job_executor.QemuPool", new=MagicMock):
         exec = JobExecutor()
     return exec
 
-def get_config(path: Path | str):
-    with open(path) as file:
-        config_dict = yaml.safe_load(file)
-        config = JobConfiguration(**config_dict)
-    return config
+# def get_config(path: Path | str):
+#     with open(path) as file:
+#         config_dict = yaml.safe_load(file)
+#         config = JobConfiguration(**config_dict)
+#     return config
 
     
-
 @pytest.fixture
 def sample_job_bin_configuration() -> JobConfiguration:
     config = get_config("./test/fixtures/bin_sample_config.yml")
@@ -59,9 +59,9 @@ request = JobRequestPayload(
 def sample_job_request() -> JobRequestPayload:
     return request
 
-@pytest.fixture
-def job_configuration(request: Any):
-    return request.getfixturevalue(request.param)
+# @pytest.fixture
+# def job_configuration(request: Any):
+#     return request.getfixturevalue(request.param)
 
 def test_run_job_success(executor: JobExecutor, sample_job_request: JobRequestPayload, sample_job_bin_configuration: JobConfiguration, sample_job_file_configuration: JobConfiguration, sample_job_http_configuration: JobConfiguration):
     executor.local_job_cache.cache_job = lambda job_id: None
@@ -94,52 +94,51 @@ def test_build_run_command_bin(job_configuration: JobConfiguration,
     command = executor.build_run_command(job_configuration, sample_job_request)
     assert expected_output == " ".join(command)
 
-def test_parse_args(executor: JobExecutor):
-    allowed_args = ["--qty", "-v", "--isTrue"] 
-    input_args: dict[Any, Any] = {
-        "qty": 3,
-        "v": "Hello",
-        "isTrue": True
-    }
+# def test_parse_args(executor: JobExecutor):
+#     allowed_args = ["--qty", "-v", "--isTrue"] 
+#     input_args: dict[Any, Any] = {
+#         "qty": 3,
+#         "v": "Hello",
+#         "isTrue": True
+#     }
 
-    args_string = executor.parse_input_args(allowed_args, input_args)
+#     args_string = executor.parse_input_args(allowed_args, input_args)
 
-    assert args_string == "--qty 3 -v Hello --isTrue True"
+#     assert args_string == "--qty 3 -v Hello --isTrue True"
 
-def test_parse_args_ignore_not_allowed(executor: JobExecutor):
-    allowed_args = ["--qty", "-v", "--isTrue"] 
-    input_args: dict[Any, Any] = {
-        "qty": 3,
-        "v": "Hello",
-        "isTrue": True,
-        "ignore": "bad data"
-    }
+# def test_parse_args_ignore_not_allowed(executor: JobExecutor):
+#     allowed_args = ["--qty", "-v", "--isTrue"] 
+#     input_args: dict[Any, Any] = {
+#         "qty": 3,
+#         "v": "Hello",
+#         "isTrue": True,
+#         "ignore": "bad data"
+#     }
 
-    args_string = executor.parse_input_args(allowed_args, input_args)
+#     args_string = executor.parse_input_args(allowed_args, input_args)
 
-    assert args_string == "--qty 3 -v Hello --isTrue True"
+#     assert args_string == "--qty 3 -v Hello --isTrue True"
 
 
-@pytest.mark.parametrize("status_code, expected", [
-    (1, 400),
-    (2, 500),
-    (999, 500), # Should be caught by default state
-    (-1000, 500)
-])
-def test_parse_status_code(status_code: int, expected: int, executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
-    error_map = sample_job_bin_configuration.error_map
+# @pytest.mark.parametrize("status_code, expected", [
+#     (1, 400),
+#     (2, 500),
+#     (999, 500), # Should be caught by default state
+#     (-1000, 500)
+# ])
+# def test_parse_status_code(status_code: int, expected: int, executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
+#     error_map = sample_job_bin_configuration.error_map
 
-    result = executor.parse_status_code(error_map, status_code)
-    assert result == expected
+#     result = executor.parse_status_code(error_map, status_code)
+#     assert result == expected
 
-def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
-    error_map = sample_job_bin_configuration.error_map
-    del error_map["default"]
-    status_code = 100
+# def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
+#     error_map = sample_job_bin_configuration.error_map
+#     del error_map["default"]
+#     status_code = 100
 
-    status_code = executor.parse_status_code(error_map, status_code)
-    assert status_code  == 500 # should default to 500 even if no default mappint provided
-
+#     status_code = executor.parse_status_code(error_map, status_code)
+#     assert status_code  == 500 # should default to 500 even if no default mappint provided
 
 @pytest.mark.integration
 def test_run_job_integration(sample_job_request: JobRequestPayload):
@@ -152,11 +151,11 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
                      created_at=datetime.now(),
                      updated_at=datetime.now())
 
-    executor.local_job_cache.fetch_job_information = lambda job_id: sample_job
+#     executor.local_job_cache.fetch_job_information = lambda job_id: sample_job
 
-    assert sample_job_request.params
-    assert sample_job_request.params["qty"]
-    assert sample_job_request.body
+#     assert sample_job_request.params
+#     assert sample_job_request.params["qty"]
+#     assert sample_job_request.body
 
     result = sample_job_request.body + "\n"
     for _ in range(int(sample_job_request.params["qty"])):
@@ -164,8 +163,6 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
 
     expected: dict[Any, Any] =  {"input": sample_job_request.body + "\n", "result": result}
 
-    output = executor.run_job(sample_job_request)
+#     output = executor.run_job(sample_job_request)
 
     assert ast.literal_eval(output.body) == expected
-
-

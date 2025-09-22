@@ -104,6 +104,7 @@ class QemuPool:
     def _warm_vms(self):
         memory_per_machine = MAX_MEMORY_ALLOCATED // MAX_CPU_COUNT_ALLOCATED
         for _ in range(MAX_CPU_COUNT_ALLOCATED):
+
             vm_id = uuid4()
             path = Path(f"{VM_IMG_INSTANCES_PATH}/{vm_id}.qcow2") # update this
             qemu = QemuController(path, 1, memory_per_machine, vm_id)
