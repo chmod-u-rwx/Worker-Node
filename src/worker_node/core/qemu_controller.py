@@ -32,7 +32,7 @@ class QemuController:
         self.qemu_id = id
         self.img_path = img_path 
         self.cpu_count = cpu_count
-        self.snapshot_name = "windows"
+        self.snapshot_name = "basetest"
         self.memory_allocated = memory_allocated
         self.status = QemuStatus.STOPPED
         self.boot_time = 0
