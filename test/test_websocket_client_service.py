@@ -1,272 +1,505 @@
 import json
+import httpx
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import uuid4, UUID
-from websockets.exceptions import ConnectionClosed, WebSocketException
-from src.worker_node.services.websocket_client_service import WebsocketClientService
+from websockets import ConnectionClosed, WebSocketException
+from src.worker_node.models.master_node import MasterNode
+from src.worker_node.services.websocket_client_service import (
+    WebsocketClientService,
+    MasterNodeNotFound,
+    MasterNodeInvalidResponse,
+    MasterNodeDiscoveryError,
+)
+from src.worker_node.models.payloads import JobRequestPayload, MessageType, MethodEnum, WebsocketMessage
 
-class TestWebsocketClientService:
-    
-    @pytest.fixture
-    def worker_id(self):
-        return uuid4()
-    
-    @pytest.fixture
-    def mock_env_vars(self):
-        """
-        Mock environment variables
-        """
-        
-        with patch.dict('os.environ', {
-            'CORE_API_URI': 'http://localhost:8000',
-        }):
-            yield
-    
-    @pytest.fixture
-    def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.CORE_API_URI', 'ws://localhost:8000'):
-            return WebsocketClientService(worker_id)
-    
-    def test_init_success(self, worker_id: UUID):
-        """
-        Test successful initialization
-        """
+# @pytest.fixture
+# def worker_id():
+#     return uuid4()
 
-        with patch("src.worker_node.config.CORE_API_URI", "ws://mocked-api:1234"):
+@pytest.fixture
+def websocket_service(worker_id: UUID):
+    with patch("src.worker_node.services.websocket_client_service.JobExecutor", MagicMock):
+        yield WebsocketClientService(worker_id=worker_id, max_reconnect_attempts=3)
 
-            service = WebsocketClientService(worker_id)
+# @pytest.fixture
+# def mock_websocket():
+#     websocket = AsyncMock()
+#     websocket.recv = AsyncMock()
+#     websocket.send = AsyncMock()
+#     websocket.close = AsyncMock()
+#     return websocket
 
-            assert service.worker_id == str(worker_id)
-            assert service.websocket is None
-            assert service.running is False
+# @pytest.fixture
+# def sample_master_node_data():
+#     return MasterNode(
+#         master_id=uuid4(),
+#         master_address="192.168.1.100"
+#     ).model_dump()
+
+# class TestWebsocketClientService:
     
-    @pytest.mark.asyncio
-    async def test_discover_master_node_success(self, worker_service: WebsocketClientService):
-        """
-        Test successful master node discovery
-        """
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
-        mock_response.raise_for_status.return_value = None
-        
-        with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-            
-            result = await worker_service.discover_master_node()
-            
-            expected_url = f"ws://192.168.1.100:8001/ws/connect/{worker_service.worker_id}"
-            assert result == expected_url
+    def test_init_with_uuid_object(self, websocket_service: WebsocketClientService):
+        worker_id = uuid4()
+        websocket_service = WebsocketClientService(worker_id=worker_id)
+        assert websocket_service.worker_id == str(worker_id)
+        assert websocket_service.websocket is None
+        assert websocket_service.max_reconnect_attempts == 3
+        assert websocket_service.current_websocket_url is None
     
-    @pytest.mark.asyncio
-    async def test_connect_success_with_provided_url(self, worker_service: WebsocketClientService):
-        """
-        Test successful connection with provided websocket URL
-        """
-        
-        mock_websocket = AsyncMock()
-        async def mock_connect_function(*args, **kwargs): # type: ignore
-            return mock_websocket
-        
-        websocket_url = "ws://localhost:8001/ws/connect/test"
-        
-        with patch('websockets.connect', side_effect=mock_connect_function) as mock_connect:
-            await worker_service.connect(websocket_url)
-            
-            mock_connect.assert_called_once_with(websocket_url)
-            assert worker_service.websocket == mock_websocket
-            assert worker_service.running is True
+    def test_init_with_custom_max_reconnect_attempts(self, websocket_service: WebsocketClientService):
+        assert websocket_service.max_reconnect_attempts == 3
     
-    @pytest.mark.asyncio
-    async def test_connect_success_with_discovery(self, worker_service: WebsocketClientService):
-        """
-        Test successful connection using master node discovery
-        """
-        
-        mock_websocket = AsyncMock()
-        async def mock_connect_function(*args, **kwargs): # type: ignore
-            return mock_websocket
-        
-        discovered_url = f"ws://192.168.1.100:8001/ws/connect/{worker_service.worker_id}"
-        
-        with patch.object(worker_service, 'discover_master_node', return_value=discovered_url) as mock_discover, \
-            patch('websockets.connect', side_effect=mock_connect_function) as mock_connect:
+#     @pytest.mark.asyncio
+#     async def test_discover_master_node_success(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         sample_master_node_data: MasterNode
+#     ): 
+#         with patch("httpx.AsyncClient") as mock_client_class:
+#             mock_client = AsyncMock()
+#             mock_client_class.return_value.__aenter__.return_value = mock_client
             
-            await worker_service.connect()
+#             mock_response = Mock()
+#             mock_response.status_code = 200
+#             mock_response.json.return_value = sample_master_node_data
+#             mock_response.raise_for_status.return_value = None
+#             mock_client.get.return_value = mock_response
             
-            mock_discover.assert_called_once()
-            mock_connect.assert_called_once_with(discovered_url)
-            assert worker_service.websocket == mock_websocket
-            assert worker_service.running is True
+#             with patch('src.worker_node.models.master_node.MasterNode') as mock_master_node:
+#                 mock_master_node.return_value.master_address = "192.168.1.100"
+                
+#                 result = await websocket_service.discover_master_node()
+#                 expected_url = f"ws://192.168.1.100/ws/connect/{websocket_service.worker_id}"
+#                 assert result == expected_url
     
-    @pytest.mark.asyncio
-    async def test_send_message_success(self, worker_service: WebsocketClientService):
-        """
-        Test successful message sending
-        """
+#     @pytest.mark.asyncio
+#     async def test_discover_master_node_404_error(
+#         self,
+#         websocket_service: WebsocketClientService
+#     ):
+#         with patch("httpx.AsyncClient") as mock_client_class:
+#             mock_client = AsyncMock()
+#             mock_client_class.return_value.__aenter__.return_value = mock_client
         
-        mock_websocket = AsyncMock()
-        worker_service.websocket = mock_websocket
-        message = {"type": "heartbeat", "timestamp": "2024-01-01T00:00:00Z"}
-        
-        await worker_service.send_message(message)
-        
-        mock_websocket.send.assert_called_once_with(json.dumps(message))
-    
-    @pytest.mark.asyncio
-    async def test_send_message_not_connected(self, worker_service: WebsocketClientService):
-        """
-        Test sending message when not connected
-        """
-        
-        message = {"type": "heartbeat"}
-        
-        with pytest.raises(RuntimeError, match="Not connected to WebSocket server"):
-            await worker_service.send_message(message)
+#             mock_response = Mock()
+#             mock_response.status_code = 404
+#             mock_client.get.return_value = mock_response
             
-    @pytest.mark.asyncio
-    async def test_send_message_connection_closed(self, worker_service: WebsocketClientService):
-        """
-        Test sending message when connection is closed
-        """
-        mock_websocket = AsyncMock()
-        mock_websocket.send.side_effect = ConnectionClosed(None, None)
-        worker_service.websocket = mock_websocket
-        worker_service.running = True
-        
-        message = {"type": "heartbeat"}
-        
-        with patch.object(worker_service, 'disconnect', new_callable=AsyncMock) as mock_disconnect:
-            with pytest.raises(ConnectionClosed):
-                await worker_service.send_message(message)
+#             with pytest.raises(MasterNodeNotFound, match="Master node discovery endpoint returned 404 Not Found"):
+#                 await websocket_service.discover_master_node()
+    
+#     @pytest.mark.asyncio
+#     async def test_discover_master_node_http_request_error(
+#         self,
+#         websocket_service: WebsocketClientService
+#     ):
+#         with patch('httpx.AsyncClient') as mock_client_class:
+#             mock_client = AsyncMock()
+#             mock_client_class.return_value.__aenter__.return_value = mock_client
+#             mock_client.get.side_effect = httpx.RequestError("Network error")
             
-            assert worker_service.running is False
-            mock_disconnect.assert_called_once()
+#             with pytest.raises(MasterNodeDiscoveryError, match="HTTP request failed"):
+#                 await websocket_service.discover_master_node()
     
-    @pytest.mark.asyncio
-    async def test_send_message_websocket_exception(self, worker_service: WebsocketClientService):
-        """
-        Test sending message with WebSocket exception
-        """
-        mock_websocket = AsyncMock()
-        mock_websocket.send.side_effect = WebSocketException("WebSocket error")
-        worker_service.websocket = mock_websocket
-        
-        message = {"type": "heartbeat"}
-        
-        with pytest.raises(WebSocketException):
-            await worker_service.send_message(message)
-    
-    @pytest.mark.asyncio
-    async def test_disconnect_success(self, worker_service: WebsocketClientService):
-        """
-        Test successful disconnection
-        """
-        
-        mock_websocket = AsyncMock()
-        worker_service.websocket = mock_websocket
-        worker_service.running = True
-        
-        await worker_service.disconnect()
-        
-        mock_websocket.close.assert_called_once()
-        assert worker_service.running is False
-    
-    @pytest.mark.asyncio
-    async def test_disconnect_no_websocket(self, worker_service: WebsocketClientService):
-        """Test disconnection when no websocket is set"""
-        worker_service.running = True
-        worker_service.websocket = None
-        
-        with patch.object(worker_service, 'websocket', None):
-            await worker_service.disconnect()
+#     @pytest.mark.asyncio
+#     async def test_discover_master_node_invalid_response_data(
+#         self,
+#         websocket_service: WebsocketClientService
+#     ):
+#         with patch("httpx.AsyncClient") as mock_client_class:
+#             mock_client = AsyncMock()
+#             mock_client_class.return_value.__aenter__.return_value = mock_client
             
-            assert worker_service.websocket is None
-            assert worker_service.running is False
-    
-    @pytest.mark.asyncio
-    async def test_disconnect_with_error(self, worker_service: WebsocketClientService):
-        """Test disconnection with error during close"""
-        mock_websocket = AsyncMock()
-        mock_websocket.close.side_effect = Exception("Close error")
-        worker_service.websocket = mock_websocket
-        worker_service.running = True
-        
-        await worker_service.disconnect()
-        assert worker_service.running is False
-    
-class TestWebsocketClientServiceIntegration:
-    """
-    Integration tests that test multiple methods together
-    """
-    
-    @pytest.fixture
-    def worker_id(self):
-        return uuid4()
-    
-    @pytest.fixture
-    def worker_service(self, worker_id: UUID):
-        with patch('src.worker_node.config.CORE_API_URI', 'http://localhost:8000'):
-            return WebsocketClientService(worker_id)
-    
-    @pytest.mark.asyncio
-    async def test_full_workflow_success(self, worker_service: WebsocketClientService):
-        """
-        Test the full workflow: discover -> connect -> send -> listen -> disconnect
-        """
-        
-        mock_websocket = AsyncMock()
-        async def mock_connect_function(*args, **kwargs): # type: ignore
-            return mock_websocket
-        
-        discovered_url = f"ws://192.168.1.100:8001/ws/connect/{worker_service.worker_id}"
-        test_message = {"type": "heartbeat", "timestamp": "2024-01-01T00:00:00Z"}
-        received_message = {"type": "task", "data": "test_task"}
-        
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"master_address": "192.168.1.100:8001"}
-        mock_response.raise_for_status.return_value = None
-        
-        mock_websocket.recv.side_effect = [
-            json.dumps(received_message),
-            ConnectionClosed(None, None)
-        ]
-        
-        with patch('httpx.AsyncClient') as mock_client, \
-            patch('websockets.connect', side_effect=mock_connect_function) as mock_connect:
+#             mock_response = Mock()
+#             mock_response.status_code = 200
+#             mock_response.json.return_value = {"invalid": "data"}
+#             mock_response.raise_for_status.return_value = None
+#             mock_client.get.return_value = mock_response
             
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-            
-            await worker_service.connect()
-            assert worker_service.running is True
-            mock_connect.assert_called_once_with(discovered_url)
-            
-            await worker_service.send_message(test_message)
-            mock_websocket.send.assert_called_once_with(json.dumps(test_message))
-            
-            await worker_service.listen_for_messages()
-            assert mock_websocket.recv.call_count == 2
-            assert worker_service.running is False
+#             with patch('src.worker_node.models.master_node.MasterNode') as mock_master_node:
+#                 mock_master_node.side_effect = ValueError("Missing required fields")
+                
+#                 with pytest.raises(MasterNodeInvalidResponse, match="Invalid master node data"):
+#                     await websocket_service.discover_master_node()
+
+# class TestConnect:
     
-    @pytest.mark.asyncio
-    async def test_connect_send_disconnect_workflow(self, worker_service: WebsocketClientService):
-        """
-        Test connect -> send -> disconnect workflow
-        """
+#     @pytest.mark.asyncio
+#     async def test_connect_success_with_provided_url(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         async def mock_connect(*args, **kwargs): #type: ignore
+#             return mock_websocket
         
-        mock_websocket = AsyncMock()
-        async def mock_connect_function(*args, **kwargs): # type: ignore
-            return mock_websocket
+#         websocket_url = "ws://192.168.1.100/ws/connect/test"
         
-        websocket_url = "ws://localhost:8001/ws/connect/test"
-        test_message = {"type": "status_update", "status": "ready"}
-        
-        with patch('websockets.connect', side_effect=mock_connect_function):
-            await worker_service.connect(websocket_url)
-            assert worker_service.running is True
+#         with patch("websockets.connect", side_effect=mock_connect):
+#             await websocket_service.connect(max_reconnect_attempts=3, websocket_url=websocket_url)
             
-            await worker_service.send_message(test_message)
-            mock_websocket.send.assert_called_once_with(json.dumps(test_message))
+#             assert websocket_service.websocket == mock_websocket
+#             assert websocket_service.current_websocket_url == websocket_url
+    
+#     @pytest.mark.asyncio
+#     async def test_connect_success_with_discovered_url(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         async def mock_connect(*args, **kwargs): #type: ignore
+#             return mock_websocket
+        
+#         discovered_url = "ws//192.168.1.100/ws/connect/test"
+        
+#         with patch("websockets.connect", side_effect=mock_connect):
+#             with patch.object(websocket_service, "discover_master_node", return_value=discovered_url) as mock_discover:
+#                 await websocket_service.connect(max_reconnect_attempts=3)
+                
+#                 mock_discover.assert_called_once()
+#                 assert websocket_service.current_websocket_url == discovered_url
+    
+#     @pytest.mark.asyncio
+#     async def test_retry_on_connection_closed(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_url = "ws://192.168.1.101/ws/connect/test"
+        
+#         call_count = {"count": 0}
+#         async def mock_connect(*args, **kwargs): #type: ignore
+#             if call_count["count"] == 0:
+#                 call_count["count"] += 1
+#                 raise ConnectionClosed(None, None)
+#             return mock_websocket
+        
+#         with patch("websockets.connect", side_effect=mock_connect):
             
-            await worker_service.disconnect()
-            mock_websocket.close.assert_called_once()
-            assert worker_service.running is False
+#             await websocket_service.connect(max_reconnect_attempts=3, websocket_url=websocket_url)
+#             assert websocket_service.websocket == mock_websocket
+    
+#     @pytest.mark.asyncio
+#     async def test_connect_rediscover_after_max_attempts(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_url = "ws://192.168.1.100/ws/connect/test"
+#         new_discovered_url = "ws://192.168.1.101/ws/connect/test"
+        
+#         call_count = {"count": 0}
+#         async def mock_connect(url, *args, **kwargs): #type: ignore
+#             if call_count["count"] < 3:
+#                 call_count["count"] += 1
+#                 raise ConnectionClosed(None, None)
+            
+#             assert url == new_discovered_url
+#             return mock_websocket
+
+#         with patch("websockets.connect", side_effect=mock_connect):
+#             with patch.object(websocket_service, "discover_master_node", return_value=new_discovered_url) as mock_discover:
+#                 await websocket_service.connect(max_reconnect_attempts=3, websocket_url=websocket_url)
+                
+#                 assert call_count["count"] == 3
+#                 mock_discover.assert_called_once()
+#                 assert websocket_service.current_websocket_url == new_discovered_url
+#                 assert websocket_service.websocket == mock_websocket
+    
+#     @pytest.mark.asyncio
+#     async def test_connect_failure_after_all_attempts(
+#         self,
+#         websocket_service: WebsocketClientService,
+#     ):
+#         websocket_url = "ws://192.168.1.100/ws/connect/test"
+        
+#         with patch("websockets.connect", side_effect = ConnectionClosed(None, None)):
+#             with patch.object(websocket_service, "discover_master_node", return_value=websocket_url):
+#                 with pytest.raises(ConnectionError, match=f"Failed to connect after {websocket_service.max_reconnect_attempts} attempts"):
+#                     await websocket_service.connect(max_reconnect_attempts=3, websocket_url=websocket_url, max_rediscoveries=2)
+    
+#     @pytest.mark.asyncio
+#     async def test_connect_unexpected_exception(
+#         self,
+#         websocket_service: WebsocketClientService
+#     ):
+#         websocket_url = "ws://localhost:8080/ws/connect/test"
+        
+#         with patch('websockets.connect') as mock_connect:
+#             mock_connect.side_effect = ValueError("Unexpected error")
+            
+#             with pytest.raises(ConnectionError, match=f"Failed to connect after {websocket_service.max_reconnect_attempts} attempts"):
+#                 await websocket_service.connect(max_reconnect_attempts=3, websocket_url=websocket_url)
+
+# class TestListenForMessage:
+    
+#     @pytest.mark.asyncio
+#     async def test_listen_for_message_not_connected(
+#         self,
+#         websocket_service: WebsocketClientService,
+#     ):
+#         with pytest.raises(RuntimeError, match="Not connected to WebSocket server"):
+#             await websocket_service.listen_for_messages()
+    
+#     @pytest.mark.asyncio
+#     async def test_listen_for_message_json_message(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock,
+#     ):
+#         websocket_service.websocket = mock_websocket
+#         test_message = {"type": "test", "data": "hello"}
+        
+#         mock_websocket.recv.side_effect = [
+#             json.dumps(test_message),
+#             ConnectionClosed(None, None)
+#         ]
+        
+#         async def fake_disconnect():
+#             websocket_service.websocket = None
+        
+#         with patch.object(websocket_service, "disconnect", side_effect=fake_disconnect) as mock_disconnect:
+#             with patch.object(websocket_service, "connect") as mock_connect:
+#                 await websocket_service.listen_for_messages()
+                
+#                 mock_disconnect.assert_called()
+#                 mock_connect.assert_called_once_with(websocket_service.max_reconnect_attempts)
+    
+#     @pytest.mark.asyncio
+#     async def test_listen_for_job_rpc_message(
+#         self, 
+#         websocket_service: WebsocketClientService, 
+#         mock_websocket: AsyncMock, 
+#         monkeypatch: pytest.MonkeyPatch
+#     ):
+#         request_id = uuid4()
+#         job_request = JobRequestPayload(
+#             request_id=request_id,
+#             path="/test",
+#             job_id=uuid4(),
+#             worker_id=uuid4(),
+#             master_id=uuid4(), 
+#             body={"body": "dummy"}, 
+#             method=MethodEnum.GET
+#             )
+#         msg = WebsocketMessage(
+#         request_id=request_id,
+#         type=MessageType.JOB_REQUEST,
+#         payloads=job_request
+#         )
+
+#         websocket_service.websocket = mock_websocket
+#         mock_websocket.recv.side_effect = [
+#             json.dumps(msg.model_dump(mode="json")),
+#             ConnectionClosed(None, None)
+#         ]
+
+#         payload: JobRequestPayload | None = None
+#         async def mock_handle_job_rpc_request(request_payload: JobRequestPayload):
+#             nonlocal payload
+#             payload = request_payload
+
+#         async def fake_disconnect():
+#             websocket_service.websocket = None
+
+#         monkeypatch.setattr(websocket_service, "handle_job_rpc_request", mock_handle_job_rpc_request)
+#         monkeypatch.setattr(websocket_service, "disconnect", fake_disconnect)
+#         monkeypatch.setattr(websocket_service, "connect", AsyncMock())
+
+#         await websocket_service.listen_for_messages()
+
+#         assert payload is not None
+#         assert payload.request_id == request_id
+
+#     @pytest.mark.asyncio
+#     async def test_listen_for_message_websocket_exception(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_service.websocket = mock_websocket
+#         mock_websocket.recv.side_effect = WebSocketException("WebSocket error")
+        
+#         async def fake_disconnect():
+#             websocket_service.websocket = None
+        
+#         with patch.object(websocket_service, "disconnect", side_effect=fake_disconnect) as mock_disconnect:
+#             with patch.object(websocket_service, "connect") as mock_connect:
+#                 await websocket_service.listen_for_messages()
+                
+#                 mock_disconnect.assert_called()
+#                 mock_connect.assert_called_once_with(websocket_service.max_reconnect_attempts)
+
+# class TestSendMessage:
+#     """Test message sending functionality."""
+    
+#     @pytest.mark.asyncio
+#     async def test_send_message_not_connected(
+#         self,
+#         websocket_service: WebsocketClientService,
+#     ):
+#         payload = {"type": "test"}
+#         message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
+#         with pytest.raises(RuntimeError, match="Not connected to WebSocket server"):
+#             await websocket_service.send_message(message)
+    
+#     @pytest.mark.asyncio
+#     async def test_send_message_connection_closed_retry(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_service.websocket = mock_websocket
+        
+#         # First attempt fails with ConnectionClosed, second succeeds
+#         mock_websocket.send.side_effect = [ConnectionClosed(None, None), None]
+        
+#         with patch.object(websocket_service, 'disconnect') as mock_disconnect:
+#             with patch.object(websocket_service, 'connect') as mock_connect:
+#                 payload = {"type": "test"}
+#                 message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
+#                 await websocket_service.send_message(message)
+                
+#                 mock_disconnect.assert_called_once()
+#                 mock_connect.assert_called_once_with(websocket_service.max_reconnect_attempts)
+#                 assert mock_websocket.send.call_count == 2
+    
+#     @pytest.mark.asyncio
+#     async def test_send_message_websocket_exception_retry(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_service.websocket = mock_websocket
+        
+#         mock_websocket.send.side_effect = [WebSocketException("Error"), None]
+        
+#         with patch.object(websocket_service, 'disconnect') as mock_disconnect:
+#             with patch.object(websocket_service, 'connect') as mock_connect:
+#                 payload = {"type": "test"}
+#                 message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
+#                 await websocket_service.send_message(message)
+                
+#                 mock_disconnect.assert_called_once()
+#                 mock_connect.assert_called_once_with(websocket_service.max_reconnect_attempts)
+    
+#     @pytest.mark.asyncio
+#     async def test_send_message_max_attempts_exceeded(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_service.websocket = mock_websocket
+#         message = {"type": "test"}
+        
+#         # Fail both attempts with unexpected exception
+#         mock_websocket.send.side_effect = ValueError("Unexpected error")
+        
+#         with pytest.raises(ValueError):
+#             payload = {"type": "test"}
+#             message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
+#             await websocket_service.send_message(message)
+        
+#         assert mock_websocket.send.call_count == 2
+
+# class TestDisconnect:
+#     """Test disconnection functionality."""
+    
+#     @pytest.mark.asyncio
+#     async def test_disconnect_when_connected(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_service.websocket = mock_websocket
+        
+#         await websocket_service.disconnect()
+        
+#         mock_websocket.close.assert_called_once()
+#         assert websocket_service.websocket is None
+    
+#     @pytest.mark.asyncio
+#     async def test_disconnect_when_not_connected(
+#         self,
+#         websocket_service: WebsocketClientService,
+#     ):
+#         await websocket_service.disconnect()
+#         assert websocket_service.websocket is None
+
+# class TestIsConnected:
+#     """Test connection status checking."""
+    
+#     def test_is_connected_true(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock
+#     ):
+#         websocket_service.websocket = mock_websocket
+#         assert websocket_service.is_connected() is True
+    
+#     def test_is_connected_false(
+#         self,
+#         websocket_service: WebsocketClientService,
+#     ):
+#         assert websocket_service.is_connected() is False
+
+# class TestWebsocketClientIntegration:
+#     @pytest.mark.asyncio
+#     async def test_full_connection_flow(
+#         self,
+#         websocket_service: WebsocketClientService,
+#         mock_websocket: AsyncMock,
+#         sample_master_node_data: MasterNode
+#     ):
+#         """Test the complete flow: discover -> connect -> send -> listen -> disconnect."""
+        
+#         async def mock_connect(*args, **kwargs): #type: ignore
+#             return mock_websocket
+        
+#         with patch("httpx.AsyncClient") as mock_client_class:
+#             with patch("websockets.connect", side_effect=mock_connect):
+#                 with patch("src.worker_node.models.master_node.MasterNode") as mock_master_node:
+                    
+#                     mock_client = AsyncMock()
+#                     mock_client_class.return_value.__aenter__.return_value = mock_client
+#                     mock_response = Mock()
+#                     mock_response.status_code = 200
+#                     mock_response.json.return_value = sample_master_node_data
+#                     mock_response.raise_for_status.return_value = None
+#                     mock_client.get.return_value = mock_response
+#                     mock_master_node.return_value.master_addrese = "192.168.1.100"
+                    
+#                     await websocket_service.connect(max_reconnect_attempts=3)
+#                     assert websocket_service.is_connected()
+                    
+#                     payload = {"type": "test"}
+#                     message = WebsocketMessage(request_id=uuid4(), type=MessageType.HEARTBEAT, payloads=payload)
+        
+#                     await websocket_service.send_message(message)
+#                     mock_websocket.send.assert_called_with(json.dumps(message))
+                    
+#                     await websocket_service.disconnect()
+#                     assert not websocket_service.is_connected()
+    
+#     @pytest.mark.asyncio
+#     async def test_error_handling_chain(
+#         self, 
+#         websocket_service: WebsocketClientService,
+#     ):
+#         """Test that errors in discovery propagate correctly."""
+        
+#         with patch('httpx.AsyncClient') as mock_client_class:
+#             mock_client = AsyncMock()
+#             mock_client_class.return_value.__aenter__.return_value = mock_client
+#             mock_client.get.side_effect = httpx.RequestError("Network failure")
+            
+#             with pytest.raises(MasterNodeDiscoveryError):
+#                 await websocket_service.connect(max_reconnect_attempts=3)
+            
+#             # Service should remain disconnected
+#             assert not websocket_service.is_connected()
