@@ -539,3 +539,193 @@ def test_send_http_request_to_vm_returns_http_error(test_img: Path):
 
         assert error_response.returncode == 500
         assert error_response.stderr == "500 Server Error"
+
+def test_init_mounted_cgroup_success(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu._init_mounted_cgroup = MagicMock(return_value=None) # type: ignore
+    qemu._init_mounted_cgroup("limiter") #type: ignore
+    qemu._init_mounted_cgroup.assert_called_once_with("limiter") # type: ignore
+
+def test_failed_init_mounted_cgroup_after_mount(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    mkdir_mock = MagicMock(return_code=0, stdout="")
+    mount_mock = MagicMock(return_code=0, stdout="")
+    grep_mock = MagicMock(return_code=0, stdout="")
+
+    qemu.run_command = MagicMock(side_effect=[mkdir_mock, mount_mock, grep_mock])
+
+    with pytest.raises(RuntimeError, match="Cgroup2 has failed to mount in the VM after command. Issue at initialization"):
+        qemu._init_mounted_cgroup("limiter") # type: ignore
+
+def test_runtime_err_init_mounted_cgroup(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(side_effect=Exception("Some error"))
+
+    with pytest.raises(RuntimeError, match="Failed to mount cgroup in the VM"):
+        qemu._init_mounted_cgroup("limiter") # type: ignore
+
+def test_check_mounted_cgroup_return_true(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=0, stdout="cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime)")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    assert qemu._check_mounted_cgroup() == True # type: ignore
+    qemu.run_command.assert_called_once()
+
+def test_check_mounted_cgroup_return_false(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=1, stdout="")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    assert qemu._check_mounted_cgroup() == False # type: ignore
+    qemu.run_command.assert_called_once()
+
+def test_check_mounted_cgroup_runtime_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(side_effect=Exception("Some error"))
+
+    with pytest.raises(RuntimeError, match="Something failed when checking if cgroup is mounted: Some error"):
+        qemu._check_mounted_cgroup() # type: ignore
+
+def test_check_enabled_cgroup_controllers_has_controllers(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=0, stdout="cpu memory cpuset")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    qemu._check_enabled_cgroup_controllers() # type: ignore
+    qemu.run_command.assert_called_once()
+
+def test_check_enabled_cgroup_controllers_runtime_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=1, stdout=""))
+
+    with pytest.raises(RuntimeError, match="Something failed when checking cgroup controllers in the VM"):
+        qemu._check_enabled_cgroup_controllers() # type: ignore
+
+def test_check_enabled_cgroup_controllers_no_controllers(test_img: Path):
+    qemu = QemuController.__new__(QemuController) 
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=0, stdout="")) 
+    qemu._check_available_cgroup_controllers = MagicMock(return_value=["cpu", "memory", "cpuset"]) # type: ignore
+    qemu._enable_cgroup_controllers = MagicMock() # type: ignore
+
+    qemu._check_enabled_cgroup_controllers() # type: ignore
+    qemu._enable_cgroup_controllers.assert_called_once_with(cpu=True, memory=True, cpuset=True) # type: ignore
+
+def test_check_enabled_cgroup_controllers_missing_cpu(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=0, stdout="memory cpuset"))
+    qemu._check_available_cgroup_controllers = MagicMock(return_value=["cpu", "memory", "cpuset"]) # type: ignore
+    qemu._enable_cgroup_controllers = MagicMock() # type: ignore
+
+    qemu._check_enabled_cgroup_controllers() # type: ignore
+    qemu._enable_cgroup_controllers.assert_called_once_with(cpu=True) # type: ignore
+
+def test_check_enabled_cgroup_controllers_missing_memory(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=0, stdout="cpu cpuset"))
+    qemu._check_available_cgroup_controllers = MagicMock(return_value=["cpu", "memory", "cpuset"]) # type: ignore
+    qemu._enable_cgroup_controllers = MagicMock() # type: ignore
+
+    qemu._check_enabled_cgroup_controllers() # type: ignore
+    qemu._enable_cgroup_controllers.assert_called_once_with(memory=True) # type: ignore
+
+def test_check_enabled_cgroup_controllers_missing_cpuset(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=0, stdout="memory cpu"))
+    qemu._check_available_cgroup_controllers = MagicMock(return_value=["cpu", "memory", "cpuset"]) # type: ignore
+    qemu._enable_cgroup_controllers = MagicMock() # type: ignore
+
+    qemu._check_enabled_cgroup_controllers() # type: ignore
+    qemu._enable_cgroup_controllers.assert_called_once_with(cpuset=True) # type: ignore
+
+def test_check_available_cgroup_controllers(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=0, stdout="cpu memory cpuset io pids")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    controllers = qemu._check_available_cgroup_controllers() # type: ignore
+    qemu.run_command.assert_called_once()
+    assert controllers == ["cpu", "memory", "cpuset"]
+
+def test_check_available_cgroup_controllers_runtime_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=1, stdout=""))
+
+    with pytest.raises(RuntimeError, match="Something failed when checking available cgroup controllers in the VM"):
+        qemu._check_available_cgroup_controllers() # type: ignore
+
+def test_check_available_cgroup_controllers_no_controllers(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(return_value=MagicMock(returncode=0, stdout=""))
+
+    with pytest.raises(RuntimeError, match="No cgroup controllers are available in the VM"):
+        qemu._check_available_cgroup_controllers() # type: ignore
+
+def test_check_available_cgroup_controllers_missing_cpu(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=0, stdout="memory cpuset")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    with pytest.raises(RuntimeError, match="CPU controller is not available in VM. CPU limiting not supported."):
+        qemu._check_available_cgroup_controllers() # type: ignore
+
+def test_check_available_cgroup_controllers_missing_memory(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=0, stdout="cpu cpuset")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    with pytest.raises(RuntimeError, match="Memory controller is not available in VM. Memory limiting not supported."):
+        qemu._check_available_cgroup_controllers() # type: ignore
+
+def test_check_available_cgroup_controllers_missing_cpuset(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    grep_mock = MagicMock(returncode=0, stdout="memory cpu")
+    qemu.run_command = MagicMock(return_value=grep_mock)
+
+    with pytest.raises(RuntimeError, match="Cpuset controller is not available in VM. CPU configuration not supported."):
+        qemu._check_available_cgroup_controllers() # type: ignore
+
+def test_enable_cgroup_controllers_runtime_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.run_command = MagicMock(side_effect=Exception("Some error"))
+
+    with pytest.raises(RuntimeError, match="Failed to enable cgroup controllers in the VM: Some error"):
+        qemu._enable_cgroup_controllers(cpu=True, memory=True, cpuset=True) # type: ignore
+
+def test_update_cpu_cgroup_limits_not_mounted_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.CGROUP_PATH = "/sys/fs/cgroup"
+    qemu.cpu_count = 2
+    qemu._check_mounted_cgroup = MagicMock(return_value=False) # type: ignore
+
+    with pytest.raises(NotImplementedError, match="Cgroup is not mounted in the VM. Cannot update cpu limits."):
+        qemu.update_cpu_cgroup_limits(0.5) # type: ignore
+
+def test_update_cpu_cgroup_limits_runtime_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.CGROUP_PATH = "/sys/fs/cgroup"
+    qemu.cpu_count = 2
+    qemu._check_mounted_cgroup = MagicMock(return_value=True) # type: ignore
+    qemu.run_command = MagicMock(side_effect=Exception("Some error"))
+
+    with pytest.raises(RuntimeError, match="Failed to update cpu cgroup limits in the VM: Some error"):
+        qemu.update_cpu_cgroup_limits(0.5) # type: ignore
+
+def test_update_memory_cgroup_limits_not_mounted_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.CGROUP_PATH = "/sys/fs/cgroup"
+    qemu.memory_allocated = 500
+    qemu._check_mounted_cgroup = MagicMock(return_value=False) # type: ignore
+
+    with pytest.raises(NotImplementedError, match="Cgroup is not mounted in the VM. Cannot update memory limits."):
+        qemu.update_memory_cgroup_limits(0.5) # type: ignore
+
+def test_update_memory_cgroup_limits_runtime_error(test_img: Path):
+    qemu = QemuController.__new__(QemuController)
+    qemu.CGROUP_PATH = "/sys/fs/cgroup"
+    qemu.memory_allocated = 500
+    qemu._check_mounted_cgroup = MagicMock(return_value=True) # type: ignore
+    qemu.run_command = MagicMock(side_effect=Exception("Some error"))
+
+    with pytest.raises(RuntimeError, match="Failed to update memory cgroup limits in the VM: Some error"):
+        qemu.update_memory_cgroup_limits(0.5) # type: ignore
