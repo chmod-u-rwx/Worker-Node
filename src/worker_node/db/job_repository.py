@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 import shutil
+from typing import IO, Any
 from uuid import UUID
 
 from pydantic import HttpUrl
@@ -27,25 +28,39 @@ class JobRepositoryDatabase:
                     continue
         return total // (1024 * 1024)
 
+    def get_file(self, job_id: UUID, file_name: str, mode: str = "r") -> IO[Any]:
+        job_root_path = self.get_job_root_path(job_id)
+        file_path = job_root_path / file_name
+
+        file = open(file_path, mode=mode)
+        return file
+
+    def delete_file(self, job_id: UUID, file_name: str):
+        job_root_path = self.get_job_root_path(job_id)
+        file_path = job_root_path / file_name
+
+        os.remove(file_path)
+        return file_path
+
     def exists(self, job_id: UUID) -> bool:
-        job_path = self.cache_path / str(job_id)
-        if not job_path.exists():
+        job_root_path = self.get_job_root_path(job_id)
+        if not job_root_path.exists():
             return False
         
-        if not job_path.is_dir():
-            raise NotADirectoryError(f"{job_path} exist but is not a directory\n This shouldnt happen unless its a major corruption")
+        if not job_root_path.is_dir():
+            raise NotADirectoryError(f"{job_root_path} exist but is not a directory\n This shouldnt happen unless its a major corruption")
         
-        if not any(job_path.iterdir()):
-            raise ValueError(f"{job_path} exist but has not contents\n This shouldnt happen unless its a major corruption")
-        
+        if not any(job_root_path.iterdir()):
+            raise ValueError(f"{job_root_path} exist but has not contents\n This shouldnt happen unless its a major corruption")
+
         return True
     
     def store_job_repo(self, job_id: UUID, url: HttpUrl):
-        job_path = self.cache_path / str(job_id)
+        job_root_path = self.get_job_root_path(job_id)
         try:
-            os.mkdir(job_path)
-            self.ensure_directory_exist(job_path)
-            Repo.clone_from(str(url), job_path)
+            os.mkdir(job_root_path)
+            self.ensure_directory_exist(job_root_path)
+            Repo.clone_from(str(url), job_root_path)
         except GitCommandError as e:
             raise RuntimeError(f"Error while cloning job repo: {e}")
   
@@ -62,3 +77,7 @@ class JobRepositoryDatabase:
 
         if not cache_path.is_dir():
             raise NotADirectoryError(f"{cache_path} exists but is not a directory")
+    
+    def get_job_root_path(self, job_id: UUID):
+        return self.cache_path / str(job_id)
+    

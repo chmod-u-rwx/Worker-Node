@@ -1,5 +1,7 @@
+
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from uuid import UUID, uuid4
 from src.worker_node.core.qemu_pool import QemuPool, QemuPoolEmptyError, QemuCleaned
 from src.worker_node.config import MAX_MEMORY_ALLOCATED, MAX_CPU_COUNT_ALLOCATED
 from src.worker_node.core.qemu_controller import QemuStatus
@@ -7,7 +9,7 @@ from src.worker_node.core.qemu_controller import QemuStatus
 import pytest
 
 class MockQemu:
-    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0) -> None:
+    def __init__(self, img_path: Path, cpu_count: int = 1, memory_allocated: int = 0, vm_id: UUID = uuid4()) -> None:
         self.img_path = img_path 
         self.cpu_coun = cpu_count
         self.memory_allocated = memory_allocated
@@ -30,6 +32,12 @@ class MockQemu:
     
     def delete(self):
         ...
+    
+    def freeze(self):
+        ...
+
+    def resume(self):
+        ...
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -47,6 +55,7 @@ def test_qemu_creating_new_vm_at_startup():
 
 def test_qemu_acquire_release():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     warm_count = len(pool.warm_queue)
     running_count = len(pool.running_queue)
@@ -62,6 +71,7 @@ def test_qemu_acquire_release():
 
 def test_qemu_pool_cleanup():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     warm_count = len(pool.warm_queue)
     running_count = len(pool.running_queue)
@@ -82,10 +92,21 @@ def test_qemu_pool_cleanup():
 
 def test_qemu_empty_warm_queue():
     pool = QemuPool()
+    pool._warm_vms() # type: ignore
 
     with pytest.raises(QemuPoolEmptyError):
         while len(pool.warm_queue) >= 0:
             pool.acquire()
 
+def test_qemu_pool_session():
+    pool = QemuPool()
+    pool._warm_vms() # type: ignore
+    pool.acquire = MagicMock()
+    pool.release = MagicMock()
+    with pool.session() as qemu:
+        print(qemu)
+    
+    pool.acquire.assert_called_once()
+    pool.release.assert_called_once()    
 
 

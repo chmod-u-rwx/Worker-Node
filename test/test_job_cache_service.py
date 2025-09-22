@@ -131,3 +131,47 @@ def test_fetch_job_information_request_exception(_, service: LocalJobCacheServic
 def test_fetch_job_information_unexpected(_, service: LocalJobCacheService, sample_job: Job):
     with pytest.raises(RuntimeError, match="unexpected error"):
         service.fetch_job_information(sample_job.job_id)
+
+
+
+@pytest.mark.parametrize("config_path", [
+    "./test/fixtures/bin_sample_config.yml",
+    "./test/fixtures/file_sample_config.yml",
+    "./test/fixtures/http_sample_config.yml",
+])
+@patch("src.worker_node.services.local_job_cache_service.JobRepositoryDatabase")
+def test_get_job_configuration_success(repository: MagicMock, service: LocalJobCacheService, config_path: str):
+    job_id = uuid4()
+
+    config_file = open(config_path)
+    service.job_repository_db.get_file.return_value.__enter__.return_value = config_file # type: ignore
+    
+    config = service.get_job_configuration(job_id)
+    assert config
+
+@patch("src.worker_node.services.local_job_cache_service.JobRepositoryDatabase")
+def test_write_file(repository: MagicMock, service: LocalJobCacheService):
+    job_id = uuid4()
+    file_name = "test_file"
+    contents = "sample_contents"
+
+    config_file = MagicMock()
+    service.job_repository_db.get_file.return_value.__enter__.return_value = config_file # type: ignore
+    
+    path = service.create_file(job_id, file_name, contents)
+
+    config_file.write.assert_called_once()
+    assert path == service.job_repository_db.cache_path / str(job_id) / file_name
+
+@patch("src.worker_node.services.local_job_cache_service.JobRepositoryDatabase")
+def test_delete_file(repository: MagicMock, service: LocalJobCacheService):
+    job_id = uuid4()
+    file_name = "test_file"
+    
+    service.delete_file(job_id, file_name)
+
+    service.job_repository_db.delete_file.assert_called_once() # type: ignore
+
+
+
+
