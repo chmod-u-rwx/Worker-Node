@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/assets/images">
+        <file>images/signup1logo.png</file>
+        <file>images/signin_background.png</file>
+    </qresource>
+</RCC>
