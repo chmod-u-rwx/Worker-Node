@@ -1,15 +1,15 @@
 from PySide6.QtCore import QTimer
-import uuid
+from uuid import UUID
 import httpx
 
 class HeartbeatTimer:
     _instance =  None
-    def  __new__(cls, url:str, interval_ms:int = 1000):
+    def  __new__(cls, url:str, worker_id: UUID, master_id: UUID, interval_ms:int = 3000):
         if cls._instance is None:
             cls._instance = super(HeartbeatTimer, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, url:str, interval_ms:int = 1000):
+    def __init__(self, url:str, worker_id: UUID, master_id: UUID, interval_ms:int = 3000, ):
         if hasattr(self, "_init") and self._init:
             return
         self.websocket_url = url
@@ -17,12 +17,14 @@ class HeartbeatTimer:
         self.timer.timeout.connect(self.send_heartbeat)
         self.timer.setInterval(interval_ms)
         self._init = True
+        self.worker_id = str(worker_id)
+        self.master_id = str(master_id)
 
     def send_heartbeat(self):
         # hardcode daw muna sabi ni emil
         worker = {
-        "worker_id": str(uuid.uuid4()),
-        "master_id": str(uuid.uuid4()),
+        "worker_id": self.worker_id,
+        "master_id": self.master_id,
         "cpu": 2,
         "memory": 250,
         "job_slot": 1,
@@ -33,7 +35,8 @@ class HeartbeatTimer:
         }
 
         try:
-            httpx.post(self.websocket_url, json=worker, timeout=10)
+           httpx.post(f"{self.websocket_url}/heartbeat/", json=worker, timeout=10)
+           print("sent")
         except Exception as e:
             raise Exception(f"Error occured when sending heartbeat: {e}")
     

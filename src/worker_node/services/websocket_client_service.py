@@ -31,6 +31,7 @@ class WebsocketClientService:
         self.max_reconnect_attempts = max_reconnect_attempts
         self.current_websocket_url = None
         self.executor = JobExecutor()
+        self.master_id = None
     
     async def connect(
         self,
@@ -39,9 +40,9 @@ class WebsocketClientService:
         websocket_url: Optional[str] = None
     ) -> None:
         if not websocket_url:
-            websocket_url = await self.discover_master_node()
+            websocket_url, master_id = await self.discover_master_node()
         
-        current_address = websocket_url
+        current_address: str = websocket_url
         rediscoveries = 0
         
         while rediscoveries <= max_rediscoveries:
@@ -50,13 +51,15 @@ class WebsocketClientService:
                 try:
                     self.websocket = await websockets.connect(current_address)
                     self.current_websocket_url = current_address
+                    self.master_id = master_id
                     return
 
                 except ConnectionClosed:
                     if attempt == self.max_reconnect_attempts:
-                        new_address = await self.discover_master_node()
+                        new_address, new_master_id = await self.discover_master_node()
                         if new_address != current_address:
                             current_address = new_address
+                            master_id = new_master_id
 
                         break 
                         
@@ -152,31 +155,30 @@ class WebsocketClientService:
         
         return self.websocket is not None
     
-    async def discover_master_node(self) -> str:
-        # async with httpx.AsyncClient() as client:
-        #     try:
-        #         response = await client.get(f"{CORE_API_URI}/master-node/discover")
-        #         if response.status_code == 404:
-        #             raise MasterNodeNotFound("Master node discovery endpoint returned 404 Not Found")
-        #         elif 500 <= response.status_code < 600:
-        #             raise MasterNodeServerError(f"Master node discovery failed with status {response.status_code}")
-        #         response.raise_for_status()
-        #         master_node_data = response.json()
-        #         try:
-        #             master_node = MasterNode(**master_node_data)
-        #         except Exception as e:
-        #             raise MasterNodeInvalidResponse(f"Invalid master node data: {e}")
+    async def discover_master_node(self) -> tuple[str, UUID]:
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(f"{CORE_API_URI}/master-node/discover")
+                if response.status_code == 404:
+                    raise MasterNodeNotFound("Master node discovery endpoint returned 404 Not Found")
+                elif 500 <= response.status_code < 600:
+                    raise MasterNodeServerError(f"Master node discovery failed with status {response.status_code}")
+                response.raise_for_status()
+                master_node_data = response.json()
+                try:
+                    master_node = MasterNode(**master_node_data)
+                except Exception as e:
+                    raise MasterNodeInvalidResponse(f"Invalid master node data: {e}")
                 
-        #         master_address = str(master_node.master_address)
-        #     except httpx.RequestError as e:
-        #         raise MasterNodeDiscoveryError(f"HTTP request failed: {e}") from e
+                master_address = str(master_node.master_address)
+            except httpx.RequestError as e:
+                raise MasterNodeDiscoveryError(f"HTTP request failed: {e}") from e
 
-        #     websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
-        #     print(f"Discovered master node websocket at: {websocket_url}")
-        #     return websocket_url
-
-            websocket_url = f"ws://0.0.0.0:8020/ws/connect/{self.worker_id}"
+            websocket_url = f"ws://{master_address}/ws/connect/{self.worker_id}"
             print(f"Discovered master node websocket at: {websocket_url}")
-            return websocket_url
+            return websocket_url, master_node.master_id
         
-worker_ws_client = WebsocketClientService(UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"))
+            # websocket_url = f"ws://0.0.0.0:8020/ws/connect/{self.worker_id}"
+            # print(f"Discovered master node websocket at: {websocket_url}")
+            # return websocket_url
+        

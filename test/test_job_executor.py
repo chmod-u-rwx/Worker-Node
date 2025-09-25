@@ -5,7 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from pydantic import HttpUrl
 import yaml
@@ -15,6 +15,13 @@ from src.worker_node.models.job import Job
 from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, JobRequestPayload
 from src.worker_node.models.payloads import MethodEnum
 
+from src.worker_node_ui.providers.websocket_client_provider import get_websocket_client_service
+from src.worker_node_ui.providers.heartbeat_timer_provider import get_heartbeat_timer
+# import worker_ws_client_runner
+import asyncio
+from qasync import QEventLoop
+from PySide6.QtWidgets import QApplication
+
 
 
 @pytest.fixture
@@ -23,11 +30,11 @@ def executor() -> JobExecutor:
         exec = JobExecutor()
     return exec
 
-# def get_config(path: Path | str):
-#     with open(path) as file:
-#         config_dict = yaml.safe_load(file)
-#         config = JobConfiguration(**config_dict)
-#     return config
+def get_config(path: Path | str):
+    with open(path) as file:
+        config_dict = yaml.safe_load(file)
+        config = JobConfiguration(**config_dict)
+    return config
 
     
 @pytest.fixture
@@ -166,11 +173,11 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
                      created_at=datetime.now(),
                      updated_at=datetime.now())
 
-#     executor.local_job_cache.fetch_job_information = lambda job_id: sample_job
+    executor.local_job_cache.fetch_job_information = lambda job_id: sample_job
 
-#     assert sample_job_request.params
-#     assert sample_job_request.params["qty"]
-#     assert sample_job_request.body
+    assert sample_job_request.params
+    assert sample_job_request.params["qty"]
+    assert sample_job_request.body
 
     result = sample_job_request.body + "\n"
     for _ in range(int(sample_job_request.params["qty"])):
@@ -178,7 +185,9 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
 
     expected: dict[Any, Any] =  {"input": sample_job_request.body + "\n", "result": result}
 
-#     output = executor.run_job(sample_job_request)
+    output = executor.run_job(sample_job_request)
+
+    assert expected == output
 
 
 @pytest.mark.integration
@@ -203,4 +212,27 @@ def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
     assert output.status_code == 200
     assert output.body == "healthy"
 
-    assert ast.literal_eval(output.body) == expected
+    # assert ast.literal_eval(output.body) == expected
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_heartbeat():
+    app = QApplication.instance() or QApplication([])
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+    worker_id = uuid4()
+
+    # executor = JobExecutor()
+    # websocket_client_service = get_websocket_client_service(worker_id=worker_id)
+    # await websocket_client_service.connect(3)
+    # asyncio.create_task(websocket_client_service.listen_for_messages())
+    # heartbeat_timer = get_heartbeat_timer(worker_id=worker_id, master_id=UUID(websocket_client_service.worker_id))
+    heartbeat_timer = get_heartbeat_timer(worker_id=worker_id, master_id=uuid4())
+    # await heartbeat_timer.send_heartbeat()
+    heartbeat_timer.start_timer()
+
+    while True:
+        await asyncio.sleep(3)
+        print("reachl")
+        print("breakpoint")
+    

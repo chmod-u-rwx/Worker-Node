@@ -26,6 +26,6 @@ CACHE_SIZE_ALLOCATED = int(os.getenv("CACHE_SIZE_ALLOCATED") or "0")
 if CACHE_SIZE_ALLOCATED <= 0:
     raise ValueError("CACHE_SIZE_ALLOCATED cannot be zero or lower")
 
-CORE_API_URI=os.getenv("CORE_API_URI")
-
 VM_IMG_INSTANCES_PATH=os.getenv("VM_IMG_PATH")
+CORE_API_URI=os.getenv("CORE_API_URI")
+INGRESS_ROUTER_URI: str = str(os.getenv("INGRESS_ROUTER_URI"))
