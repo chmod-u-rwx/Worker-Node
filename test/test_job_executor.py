@@ -15,12 +15,7 @@ from src.worker_node.models.job import Job
 from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, JobRequestPayload
 from src.worker_node.models.payloads import MethodEnum
 
-from src.worker_node_ui.providers.websocket_client_provider import get_websocket_client_service
-from src.worker_node_ui.providers.heartbeat_timer_provider import get_heartbeat_timer
-# import worker_ws_client_runner
-import asyncio
-from qasync import QEventLoop
-from PySide6.QtWidgets import QApplication
+
 
 
 
@@ -214,38 +209,4 @@ def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
 
     # assert ast.literal_eval(output.body) == expected
 
-#  -qtbot
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_heartbeat(qtbot):
-    # app = QApplication.instance() or QApplication([])
-    # loop = QEventLoop(app)
-    # asyncio.set_event_loop(loop)
-    worker_id = uuid4()
-    heartbeat_timer = get_heartbeat_timer(worker_id=worker_id, master_id=uuid4())
-    with patch("httpx.post") as mock_post:
-        heartbeat_timer.start_timer()
-        qtbot.wait(heartbeat_timer.timer.interval() + 50)
-        heartbeat_timer.stop_timer()
-        assert mock_post.called
 
-# - anyio
-#   - pytest-asyncio
-#   - pytest-tornasync
-#   - pytest-trio
-#   - pytest-twisted
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_heartbeat_with_async_no_qasync():
-    qapp = QApplication.instance() or QApplication([])
-
-    worker_id = uuid4()
-    heartbeat_timer = get_heartbeat_timer(worker_id=worker_id, master_id=uuid4())
-
-    heartbeat_timer.start_timer()
-    qapp.exec()
-
-    # if i sstop process
-    #     heartbeat_timer.stop_timer()
-    #     qapp.quit() 

@@ -35,8 +35,9 @@ class HeartbeatTimer:
         }
 
         try:
+           print("sending to: ", f"{self.websocket_url}/heartbeat/")
            httpx.post(f"{self.websocket_url}/heartbeat/", json=worker, timeout=10)
-           print("sent")
+           print("sent successfully\n")
         except Exception as e:
             raise Exception(f"Error occured when sending heartbeat: {e}")
     
