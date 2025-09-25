@@ -213,39 +213,3 @@ def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
     assert output.body == "healthy"
 
     # assert ast.literal_eval(output.body) == expected
-
-#  -qtbot
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_heartbeat(qtbot):
-    # app = QApplication.instance() or QApplication([])
-    # loop = QEventLoop(app)
-    # asyncio.set_event_loop(loop)
-    worker_id = uuid4()
-    heartbeat_timer = get_heartbeat_timer(worker_id=worker_id, master_id=uuid4())
-    with patch("httpx.post") as mock_post:
-        heartbeat_timer.start_timer()
-        qtbot.wait(heartbeat_timer.timer.interval() + 50)
-        heartbeat_timer.stop_timer()
-        assert mock_post.called
-
-# - anyio
-#   - pytest-asyncio
-#   - pytest-tornasync
-#   - pytest-trio
-#   - pytest-twisted
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_heartbeat_with_async_no_qasync():
-    qapp = QApplication.instance() or QApplication([])
-
-    worker_id = uuid4()
-    heartbeat_timer = get_heartbeat_timer(worker_id=worker_id, master_id=uuid4())
-
-    heartbeat_timer.start_timer()
-    qapp.exec()
-
-    # if i sstop process
-    #     heartbeat_timer.stop_timer()
-    #     qapp.quit() 

@@ -38,22 +38,21 @@ class HeartbeatTimer:
            httpx.post(f"{self.websocket_url}/heartbeat/", json=worker, timeout=10)
            print("sent")
         except Exception as e:
-            raise Exception(f"Error occured when sending heartbeat: {e}")
+            print(f"Error in sending heartbeat{e}")
     
     def start_timer(self):
         try:
             if not self.timer.isActive():
                 self.timer.start()
             else:
-                raise RuntimeError("Start timer is already running")
+                print("heartbeat already running")
         except Exception as e:
-            raise Exception(f"Something went wrong when running the timer {e}")
-        
+            print(f"an error occured when trying to start heartbeat timer: {e}")
     def stop_timer(self):
         try:
             if self.timer.isActive():
                 self.timer.stop()
             else:
-                raise RuntimeError("Start timer has already stopped")
+                print("Start timer has already stopped")
         except Exception as e:
-            raise Exception(f"Something went wrong when stopping the timer {e}")
+            print(f"Something went wrong when stopping the timer {e}")
