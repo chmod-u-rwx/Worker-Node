@@ -2,6 +2,7 @@ alpine/
 shared/
 
 test/path
+test/images
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

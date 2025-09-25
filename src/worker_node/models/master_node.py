@@ -11,24 +11,24 @@ class MasterNode(BaseModel):
     master_id: UUID4 = Field(...)
     master_address: str = Field(...)
     
-    @field_validator('master_address')
-    @classmethod
-    def valid_ip_address(cls, v: str):
-        v = v.strip()
+    # @field_validator('master_address')
+    # @classmethod
+    # def valid_ip_address(cls, v: str):
+    #     v = v.strip()
         
-        if not v:
-            raise ValueError("master_address cannot be empty")
+    #     if not v:
+    #         raise ValueError("master_address cannot be empty")
 
-        try:
-            ipaddress.ip_address(v)
-            return v
-        except ValueError:
-            ...
+    #     try:
+    #         ipaddress.ip_address(v)
+    #         return v
+    #     except ValueError:
+    #         ...
         
-        if domain_pattern.match(v):
-            return v
+    #     if domain_pattern.match(v):
+    #         return v
         
-        raise ValueError("master_address should contain a valid IP Address or domain name")
+    #     raise ValueError("master_address should contain a valid IP Address or domain name")
 
 class UpdateMasterNode(BaseModel):
     master_address: Optional[str] = None

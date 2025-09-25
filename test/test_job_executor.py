@@ -5,7 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from pydantic import HttpUrl
 import yaml
@@ -14,6 +14,13 @@ import pytest
 from src.worker_node.models.job import Job
 from src.worker_node.core.job_executor import JobExecutor, JobConfiguration, JobRequestPayload
 from src.worker_node.models.payloads import MethodEnum
+
+from src.worker_node_ui.providers.websocket_client_provider import get_websocket_client_service
+from src.worker_node_ui.providers.heartbeat_timer_provider import get_heartbeat_timer
+# import worker_ws_client_runner
+import asyncio
+from qasync import QEventLoop
+from PySide6.QtWidgets import QApplication
 
 
 
@@ -24,10 +31,10 @@ def executor() -> JobExecutor:
     return exec
 
 def get_config(path: Path | str):
-     with open(path) as file:
-         config_dict = yaml.safe_load(file)
-         config = JobConfiguration(**config_dict)
-     return config
+    with open(path) as file:
+        config_dict = yaml.safe_load(file)
+        config = JobConfiguration(**config_dict)
+    return config
 
     
 @pytest.fixture
@@ -182,6 +189,9 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
 
     output = executor.run_job(sample_job_request)
 
+    assert expected == output
+
+
 
 """ @pytest.mark.integration
 def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
@@ -207,3 +217,4 @@ def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
 
     assert ast.literal_eval(output.body) == expected
  """
+
