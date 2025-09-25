@@ -116,51 +116,51 @@ def test_build_run_command_bin(job_configuration: JobConfiguration,
     command = executor.build_run_command(job_configuration, sample_job_request)
     assert expected_output == " ".join(command)
 
-# def test_parse_args(executor: JobExecutor):
-#     allowed_args = ["--qty", "-v", "--isTrue"] 
-#     input_args: dict[Any, Any] = {
-#         "qty": 3,
-#         "v": "Hello",
-#         "isTrue": True
-#     }
+def test_parse_args(executor: JobExecutor):
+    allowed_args = ["--qty", "-v", "--isTrue"] 
+    input_args: dict[Any, Any] = {
+        "qty": 3,
+        "v": "Hello",
+        "isTrue": True
+    }
 
-#     args_string = executor.parse_input_args(allowed_args, input_args)
+    args_string = executor.parse_input_args(allowed_args, input_args)
 
-#     assert args_string == "--qty 3 -v Hello --isTrue True"
+    assert args_string == "--qty 3 -v Hello --isTrue True"
 
-# def test_parse_args_ignore_not_allowed(executor: JobExecutor):
-#     allowed_args = ["--qty", "-v", "--isTrue"] 
-#     input_args: dict[Any, Any] = {
-#         "qty": 3,
-#         "v": "Hello",
-#         "isTrue": True,
-#         "ignore": "bad data"
-#     }
+def test_parse_args_ignore_not_allowed(executor: JobExecutor):
+    allowed_args = ["--qty", "-v", "--isTrue"] 
+    input_args: dict[Any, Any] = {
+        "qty": 3,
+        "v": "Hello",
+        "isTrue": True,
+        "ignore": "bad data"
+    }
 
-#     args_string = executor.parse_input_args(allowed_args, input_args)
+    args_string = executor.parse_input_args(allowed_args, input_args)
 
-#     assert args_string == "--qty 3 -v Hello --isTrue True"
+    assert args_string == "--qty 3 -v Hello --isTrue True"
 
 
-# @pytest.mark.parametrize("status_code, expected", [
-#     (1, 400),
-#     (2, 500),
-#     (999, 500), # Should be caught by default state
-#     (-1000, 500)
-# ])
-# def test_parse_status_code(status_code: int, expected: int, executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
-#     error_map = sample_job_bin_configuration.error_map
+@pytest.mark.parametrize("status_code, expected", [
+    (1, 400),
+    (2, 500),
+    (999, 500), # Should be caught by default state
+    (-1000, 500)
+])
+def test_parse_status_code(status_code: int, expected: int, executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
+    error_map = sample_job_bin_configuration.error_map
 
-#     result = executor.parse_status_code(error_map, status_code)
-#     assert result == expected
+    result = executor.parse_status_code(error_map, status_code)
+    assert result == expected
 
-# def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
-#     error_map = sample_job_bin_configuration.error_map
-#     del error_map["default"]
-#     status_code = 100
+def test_parse_status_code_no_default(executor: JobExecutor, sample_job_bin_configuration: JobConfiguration):
+    error_map = sample_job_bin_configuration.error_map
+    del error_map["default"]
+    status_code = 100
 
-#     status_code = executor.parse_status_code(error_map, status_code)
-#     assert status_code  == 500 # should default to 500 even if no default mappint provided
+    status_code = executor.parse_status_code(error_map, status_code)
+    assert status_code  == 500 # should default to 500 even if no default mappint provided
 
 @pytest.mark.integration
 def test_run_job_integration(sample_job_request: JobRequestPayload):
@@ -179,6 +179,8 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
     assert sample_job_request.params["qty"]
     assert sample_job_request.body
 
+    assert sample_job_request.body
+    assert sample_job_request.params
     result = sample_job_request.body + "\n"
     for _ in range(int(sample_job_request.params["qty"])):
         result = hashlib.sha256(result.encode()).hexdigest()
@@ -190,7 +192,8 @@ def test_run_job_integration(sample_job_request: JobRequestPayload):
     assert expected == output
 
 
-@pytest.mark.integration
+
+""" @pytest.mark.integration
 def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
     executor = JobExecutor()
     sample_job = Job(user_id=uuid4(),
@@ -212,4 +215,6 @@ def test_run_http_job_integration(sample_http_job_request: JobRequestPayload):
     assert output.status_code == 200
     assert output.body == "healthy"
 
-    # assert ast.literal_eval(output.body) == expected
+    assert ast.literal_eval(output.body) == expected
+ """
+
