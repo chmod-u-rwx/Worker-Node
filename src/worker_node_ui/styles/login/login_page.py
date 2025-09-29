@@ -67,15 +67,15 @@ class UiLoginPage(object):
 "}\n"
 "\n"
 "")
-        self.username_label = QLabel(login_page)
-        self.username_label.setObjectName(u"username_label")
-        self.username_label.setGeometry(QRect(460, 310, 91, 31))
+        self.email_label = QLabel(login_page)
+        self.email_label.setObjectName(u"email_label")
+        self.email_label.setGeometry(QRect(460, 310, 91, 31))
         font2 = QFont()
         font2.setFamilies([u"Segoe UI"])
         font2.setPointSize(14)
         font2.setBold(False)
-        self.username_label.setFont(font2)
-        self.username_label.setStyleSheet(u"color: white;\n"
+        self.email_label.setFont(font2)
+        self.email_label.setStyleSheet(u"color: white;\n"
 "background-color: transparent;\n"
 "")
         self.signup_button = QPushButton(login_page)
@@ -94,10 +94,10 @@ class UiLoginPage(object):
 "    color: #5B3ECC;\n"
 "}\n"
 "")
-        self.username_field = QLineEdit(login_page)
-        self.username_field.setObjectName(u"username_field")
-        self.username_field.setGeometry(QRect(460, 350, 481, 51))
-        self.username_field.setStyleSheet(u"QLineEdit {\n"
+        self.email_field = QLineEdit(login_page)
+        self.email_field.setObjectName(u"email_field")
+        self.email_field.setGeometry(QRect(460, 350, 481, 51))
+        self.email_field.setStyleSheet(u"QLineEdit {\n"
 "	background-color: transparent;\n"
 "    border: 1px solid rgba(255, 255, 255, 0.3);\n"
 "    border-radius: 10px;\n"
@@ -157,9 +157,9 @@ class UiLoginPage(object):
         self.logo.raise_()
         self.welcome_label.raise_()
         self.login_button_2.raise_()
-        self.username_label.raise_()
+        self.email_label.raise_()
         self.signup_button.raise_()
-        self.username_field.raise_()
+        self.email_field.raise_()
         self.password_label.raise_()
         self.password_field.raise_()
 
@@ -173,9 +173,9 @@ class UiLoginPage(object):
         self.logo.setText("")
         self.welcome_label.setText(QCoreApplication.translate("login_page", u"Welcome to CrowdCloud", None))
         self.login_button_2.setText(QCoreApplication.translate("login_page", u"Log In", None))
-        self.username_label.setText(QCoreApplication.translate("login_page", u"Username", None))
+        self.email_label.setText(QCoreApplication.translate("login_page", u"Email", None))
         self.signup_button.setText(QCoreApplication.translate("login_page", u"Dont have an account? Sign up", None))
-        self.username_field.setText("")
+        self.email_field.setText("")
         self.login_container.setText("")
         self.password_label.setText(QCoreApplication.translate("login_page", u"Password", None))
         self.password_field.setText("")

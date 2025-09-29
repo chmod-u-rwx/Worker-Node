@@ -6,7 +6,7 @@ from src.worker_node_ui.components.frame_bar.title_bar import TitleBar
 
 
 class SignupWindow4(QWidget):
-    def __init__(self, controller=None):
+    def __init__(self, controller=None, parent = None):
         super().__init__()
         self.controller = controller
         self.ui = UiSignupLast()
@@ -43,10 +43,9 @@ class SignupWindow4(QWidget):
     def _skip(self):
         if self.timer.isActive():
             self.timer.stop()
-
         if self.controller:
-            username = getattr(self.controller, "current_user", "")
-            email = getattr(self.controller, "current_email", "")
-            self.controller.show_dashboard(username=username, email=email)
+            self.controller.show_dashboard("maindash")
+        if self.parent():
+            self.parent().hide() #type:ignore
 
-        self.close()
+

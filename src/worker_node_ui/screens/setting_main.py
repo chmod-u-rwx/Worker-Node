@@ -1,5 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QMessageBox
-from PySide6 import QtGui, QtCore
+from PySide6.QtWidgets import QWidget, QMessageBox
 
 from src.worker_node_ui.styles.settings.ui_py.setting_main import UiMainSetting
 from src.worker_node_ui.components.resources.res_allocation import ResourceAllocation
@@ -11,18 +10,8 @@ class MainSetting(QWidget):
         self.controller = controller
         self.ui = UiMainSetting()
         self.ui.setupUi(self)
+        self.settings_dialog = parent
 
-        self.setWindowFlags(
-            QtCore.Qt.WindowType.FramelessWindowHint | QtCore.Qt.WindowType.WindowStaysOnTopHint | QtCore.Qt.WindowType.Dialog)
-        self.setStyleSheet("background-color: #0A0A2A; color: white;")
-
-        wrapper_layout = QVBoxLayout(self)
-        wrapper_layout.addWidget(self.ui.set_con)
-        wrapper_layout.setContentsMargins(15, 15, 15, 15)
-        wrapper_layout.setSpacing(15)
-        self.setFixedSize(self.size())
-
-        # Fetch from signup
         self.resource_config = ResourceAllocation(
             cpu_slider=self.ui.cpu_slider,
             cpu_lineedit=self.ui.cpu_lineedit,
@@ -47,26 +36,28 @@ class MainSetting(QWidget):
             browse_button=self.ui.clearc_bt_2
         )
 
-        if self.controller.user_resource:
-            self.resource_config.set_data(self.controller.user_resource)
-            self.disk_widget.set_data(self.controller.user_resource)
+        if self.controller.user_resources:
+            self.resource_config.set_data(self.controller.user_resources)
+            self.disk_widget.set_data(self.controller.user_resources)
 
-        # Settings Navigation Buttons
         self.ui.schanges_bt.clicked.connect(self.handle_save)
-        self.ui.cancel_bt.clicked.connect(self.close)
+        self.ui.cancel_bt.clicked.connect(self.close_page)
         self.ui.logout_bt.clicked.connect(self.handle_logout)
         self.ui.clearc_bt.clicked.connect(self.handle_clear_cache)
         self.ui.eprofile_bt.clicked.connect(self.open_edit_profile)
 
     def open_edit_profile(self):
-        if self.controller:
-            self.hide() 
-            self.controller.show_profile_settings()
+        if self.settings_dialog:
+            self.settings_dialog.show_page("profile")
+
+    def close_page(self):
+        if self.settings_dialog:
+            self.settings_dialog.close()
 
     def handle_save(self):
         data = self.resource_config.get_data()
         data.update(self.disk_widget.get_data())
-        self.controller.user_resource = data
+        self.controller.user_resources = data
         QMessageBox.information(self, "Saved", "Settings updated successfully.")
 
     def handle_logout(self):
@@ -74,12 +65,11 @@ class MainSetting(QWidget):
             self,
             "Confirm Logout",
             "Are you sure you want to log out?",
-            QMessageBox.Yes | QMessageBox.No, #type: ignore
-            QMessageBox.No #type: ignore
+            QMessageBox.Yes | QMessageBox.No, #type:ignore
+            QMessageBox.No #type:ignore
         )
-        if reply == QMessageBox.Yes: #type: ignore
-            self.close()
-            self.controller.show_login()
+        if reply == QMessageBox.Yes: #type:ignore
+            self.controller.logout_user()
 
     def handle_clear_cache(self):
         self.ui.cache_lineedit.clear()

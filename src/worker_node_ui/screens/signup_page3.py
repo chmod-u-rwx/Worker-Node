@@ -9,7 +9,7 @@ from src.worker_node_ui.components.resources.disk_cache import DiskCache
 
 
 class SignupWindow3(QWidget):
-    def __init__(self, controller=None):
+    def __init__(self, controller=None, parent = None):
         super().__init__()
         self.controller = controller
         self.ui = UiSignupAlmost()
@@ -70,11 +70,8 @@ class SignupWindow3(QWidget):
             )
             return
 
-        print(f"Cache Path: {data['cache_path']}")
-        print(f"Disk Allocation: {data['disk_mb']} MB")
-
-        self.controller.show_signup_widget4()
+        self.controller.show_signup("signup4")
 
     def handle_back(self):
         if self.controller:
-            self.controller.show_signup_widget2()
+            self.controller.show_signup("signup2")

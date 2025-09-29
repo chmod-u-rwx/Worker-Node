@@ -2,24 +2,21 @@ import re
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtWidgets import QWidget, QLabel, QLineEdit, QVBoxLayout
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QShortcut, QKeySequence
 
 from src.worker_node_ui.styles.signup.ui_py.signup_page1 import UiSignupCreate
 from src.worker_node_ui.components.frame_bar.title_bar import TitleBar
+from src.worker_node_ui.components.dialog.dialog_message import show_custom_error
 
 
 class SignupWindow1(QWidget):
-    def __init__(self, controller):
+    def __init__(self, controller, parent = None):
         super().__init__()
         self.controller = controller
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.resize(1440, 810)
-
-        screen_geometry = QtWidgets.QApplication.primaryScreen().geometry()
-        x = (screen_geometry.width() - self.width()) // 2
-        y = (screen_geometry.height() - self.height()) // 2
-        self.move(x, y)
 
         self.ui = UiSignupCreate()
         self.ui.setupUi(self)
@@ -84,7 +81,7 @@ class SignupWindow1(QWidget):
         line_edit.focusOutEvent = new_focus_out
         line_edit.textChanged.connect(lambda text: float_up() if text else float_down())
 
-    def add_password_toggle(self, line_edit):
+    def add_password_toggle(self, line_edit, x_offset=-5, y_offset=0):
         toggle_btn = QtWidgets.QToolButton(line_edit)
         toggle_btn.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
 
@@ -93,14 +90,17 @@ class SignupWindow1(QWidget):
         toggle_btn.setStyleSheet("QToolButton { border: none; padding: 0px; }")
 
         frame_width = line_edit.style().pixelMetric(QtWidgets.QStyle.PixelMetric.PM_DefaultFrameWidth)
+        
         toggle_btn.move(
-            line_edit.rect().right() - btn_size - frame_width,
-            (line_edit.height() - btn_size) // 2,
+            line_edit.rect().right() - btn_size - frame_width + x_offset,
+            (line_edit.height() - btn_size) // 2 + y_offset,
         )
 
         eye_icon = QtGui.QIcon(
             QtGui.QPixmap("src/worker_node_ui/resources/fbuttons/eye-512.png").scaled(
-                btn_size, btn_size, QtCore.Qt.AspectRatioMode.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation 
+                btn_size, btn_size,
+                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation
             )
         )
         toggle_btn.setIcon(eye_icon)
@@ -109,6 +109,7 @@ class SignupWindow1(QWidget):
         toggle_btn.clicked.connect(lambda: self.show_password_temporarily(line_edit))
         line_edit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
         line_edit.setTextMargins(0, 0, btn_size + frame_width, 0)
+
 
     def show_password_temporarily(self, line_edit):
         line_edit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
@@ -121,6 +122,7 @@ class SignupWindow1(QWidget):
 
     def setup_logic(self):
         self.ui.next_button.clicked.connect(self.handle_next)
+        QShortcut(QKeySequence(Qt.Key_Return), self, activated=self.handle_next) #type: ignore
         self.ui.login_button.clicked.connect(self.handle_login)
 
     def handle_next(self):
@@ -130,28 +132,42 @@ class SignupWindow1(QWidget):
         confpass = self.ui.confpass_field.text()
 
         if not email or not username or not password or not confpass:
-            QtWidgets.QMessageBox.warning(self, "Error", "All fields are required!")
-            return
-
-        if not self.validate_email(email):
-            QtWidgets.QMessageBox.warning(self, "Error", "Invalid email address!")
-            return
-
-        if len(password) < 8:
-            QtWidgets.QMessageBox.warning(self, "Error", "Password must be at least 8 characters long!")
+            show_custom_error(self, "All fields are required!")
             return
 
         if password != confpass:
-            QtWidgets.QMessageBox.warning(self, "Error", "Passwords do not match!")
+            show_custom_error(self, "Passwords do not match!")
+            return
+        
+        if len(password) < 8:
+            show_custom_error(self, "Password must be at least 8 characters long")
             return
 
-        self.controller.current_user = username
-        self.controller.current_email = email
-        print(f"[DEBUG] Stored in controller: user={username}, email={email}")
+        password_pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$'
+        if not re.match(password_pattern, password):
+            show_custom_error(
+                self,
+                "Password must contain uppercase, lowercase, number, and at least one special character"
+            )
+            return
 
-        self.hide()
-        self.controller.show_signup_widget2()
+        self.controller.signup_user({
+            "username": username,
+            "email": email,
+            "password": password,
+            "confirm_password": confpass,
+            "first_name": "N/A",
+            "last_name": "N/A",
+            "phone_number": "0000000000",
+            "role": "individual"
+        })
+
+        self.controller.show_signup("signup2")
+
 
     def handle_login(self):
-        self.hide()
+        self.close()
         self.controller.show_login()
+
+
+

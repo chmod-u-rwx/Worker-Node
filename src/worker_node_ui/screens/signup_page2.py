@@ -9,7 +9,7 @@ from src.worker_node_ui.components.resources.res_allocation import ResourceAlloc
 
 
 class SignupWindow2(QWidget):
-    def __init__(self, controller):
+    def __init__(self, controller, parent = None):
         super().__init__()
         self.controller = controller
         self.ui = UiSignupTell()
@@ -62,7 +62,7 @@ class SignupWindow2(QWidget):
 
     def handle_next(self):
         self.controller.user_resources = self.resource_config.get_data()
-        self.controller.show_signup_widget3()
+        self.controller.show_signup("signup3")
 
     def handle_back(self):
-        self.controller.show_signup_widget1()
+        self.controller.show_signup("signup1")
